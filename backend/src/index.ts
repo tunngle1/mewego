@@ -76,9 +76,9 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Backend running at http://localhost:${PORT}`);
-  console.log(`📋 Health check: http://localhost:${PORT}/api/v1/health`);
+app.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`🚀 Backend running at http://0.0.0.0:${PORT}`);
+  console.log(`📋 Health check: http://0.0.0.0:${PORT}/api/v1/health`);
 
   // Start background jobs
   if (process.env.ENABLE_CRON_JOBS !== 'false') {
