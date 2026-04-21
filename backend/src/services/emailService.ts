@@ -13,6 +13,9 @@ const SMTP_PORT = Number(process.env.YANDEX_SMTP_PORT || process.env.SMTP_PORT |
 const SMTP_USER = (process.env.YANDEX_SMTP_USER || process.env.SMTP_USER || '').trim();
 const SMTP_PASSWORD = (process.env.YANDEX_SMTP_PASSWORD || process.env.SMTP_PASSWORD || '').trim();
 const SMTP_SECURE = String(process.env.YANDEX_SMTP_SECURE || process.env.SMTP_SECURE || 'true').trim().toLowerCase() !== 'false';
+const SMTP_CONNECTION_TIMEOUT_MS = Number(process.env.SMTP_CONNECTION_TIMEOUT_MS || 20000);
+const SMTP_GREETING_TIMEOUT_MS = Number(process.env.SMTP_GREETING_TIMEOUT_MS || 20000);
+const SMTP_SOCKET_TIMEOUT_MS = Number(process.env.SMTP_SOCKET_TIMEOUT_MS || 60000);
 
 const hasEmailTransportConfig = Boolean(EMAIL_FROM && SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASSWORD);
 
@@ -38,6 +41,9 @@ const getTransporter = () => {
         user: SMTP_USER,
         pass: SMTP_PASSWORD,
       },
+      connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
+      greetingTimeout: SMTP_GREETING_TIMEOUT_MS,
+      socketTimeout: SMTP_SOCKET_TIMEOUT_MS,
     });
     return transporterCache;
   } catch {

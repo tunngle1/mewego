@@ -174,7 +174,7 @@ const issueEmailVerification = async (
       }).catch(() => {});
       console.error('[EmailAuth] verify email send async error:', error);
     });
-    return { deliveryStatus: 'sent' as const };
+    return { deliveryStatus: 'queued' as const };
   }
 
   try {
