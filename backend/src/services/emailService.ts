@@ -16,6 +16,8 @@ const SMTP_SECURE = String(process.env.YANDEX_SMTP_SECURE || process.env.SMTP_SE
 const SMTP_CONNECTION_TIMEOUT_MS = Number(process.env.SMTP_CONNECTION_TIMEOUT_MS || 20000);
 const SMTP_GREETING_TIMEOUT_MS = Number(process.env.SMTP_GREETING_TIMEOUT_MS || 20000);
 const SMTP_SOCKET_TIMEOUT_MS = Number(process.env.SMTP_SOCKET_TIMEOUT_MS || 60000);
+const SMTP_IP_FAMILY_RAW = String(process.env.SMTP_IP_FAMILY || '').trim();
+const SMTP_IP_FAMILY = SMTP_IP_FAMILY_RAW === '4' ? 4 : SMTP_IP_FAMILY_RAW === '6' ? 6 : undefined;
 
 const hasEmailTransportConfig = Boolean(EMAIL_FROM && SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASSWORD);
 
@@ -44,6 +46,7 @@ const getTransporter = () => {
       connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
       greetingTimeout: SMTP_GREETING_TIMEOUT_MS,
       socketTimeout: SMTP_SOCKET_TIMEOUT_MS,
+      ...(SMTP_IP_FAMILY ? { family: SMTP_IP_FAMILY } : null),
     });
     return transporterCache;
   } catch {
