@@ -18,6 +18,7 @@ const SMTP_GREETING_TIMEOUT_MS = Number(process.env.SMTP_GREETING_TIMEOUT_MS || 
 const SMTP_SOCKET_TIMEOUT_MS = Number(process.env.SMTP_SOCKET_TIMEOUT_MS || 60000);
 const SMTP_IP_FAMILY_RAW = String(process.env.SMTP_IP_FAMILY || '').trim();
 const SMTP_IP_FAMILY = SMTP_IP_FAMILY_RAW === '4' ? 4 : SMTP_IP_FAMILY_RAW === '6' ? 6 : undefined;
+const SMTP_TLS_SERVERNAME = (process.env.SMTP_TLS_SERVERNAME || '').trim();
 
 const hasEmailTransportConfig = Boolean(EMAIL_FROM && SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASSWORD);
 
@@ -46,7 +47,8 @@ const getTransporter = () => {
       connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
       greetingTimeout: SMTP_GREETING_TIMEOUT_MS,
       socketTimeout: SMTP_SOCKET_TIMEOUT_MS,
-      ...(SMTP_IP_FAMILY ? { family: SMTP_IP_FAMILY } : null),
+      ...(SMTP_IP_FAMILY ? { family: SMTP_IP_FAMILY } : {}),
+      ...(SMTP_TLS_SERVERNAME ? { tls: { servername: SMTP_TLS_SERVERNAME } } : {}),
     });
     return transporterCache;
   } catch {
