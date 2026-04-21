@@ -19,6 +19,7 @@ const SMTP_SOCKET_TIMEOUT_MS = Number(process.env.SMTP_SOCKET_TIMEOUT_MS || 6000
 const SMTP_IP_FAMILY_RAW = String(process.env.SMTP_IP_FAMILY || '').trim();
 const SMTP_IP_FAMILY = SMTP_IP_FAMILY_RAW === '4' ? 4 : SMTP_IP_FAMILY_RAW === '6' ? 6 : undefined;
 const SMTP_TLS_SERVERNAME = (process.env.SMTP_TLS_SERVERNAME || '').trim();
+const SMTP_FORCE_IPV6 = String(process.env.SMTP_FORCE_IPV6 || 'false').trim().toLowerCase() === 'true';
 
 const hasEmailTransportConfig = Boolean(EMAIL_FROM && SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASSWORD);
 
@@ -36,6 +37,8 @@ const getTransporter = () => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const nodemailer = require('nodemailer');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const dns = require('dns');
     transporterCache = nodemailer.createTransport({
       host: SMTP_HOST,
       port: SMTP_PORT,
@@ -49,6 +52,19 @@ const getTransporter = () => {
       socketTimeout: SMTP_SOCKET_TIMEOUT_MS,
       ...(SMTP_IP_FAMILY ? { family: SMTP_IP_FAMILY } : {}),
       ...(SMTP_TLS_SERVERNAME ? { tls: { servername: SMTP_TLS_SERVERNAME } } : {}),
+      ...(SMTP_FORCE_IPV6
+        ? {
+            // Force AAAA resolution even if Node prefers IPv4.
+            // smtp-connection will call this lookup for the TCP connect.
+            lookup: (hostname: string, _options: any, callback: (err: any, address?: string, family?: number) => void) => {
+              dns.resolve6(hostname, (err: any, addresses: string[]) => {
+                if (err) return callback(err);
+                if (!addresses || addresses.length === 0) return callback(new Error(`No AAAA records for ${hostname}`));
+                return callback(null, addresses[0], 6);
+              });
+            },
+          }
+        : {}),
     });
     return transporterCache;
   } catch {
