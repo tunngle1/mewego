@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ME·WE·GO для тренеров и организаторов</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FBF5E5;
+      --surface: #AAC4BB;
+      --neutral: #D0D4C5;
+      --text: #171E22;
+      --accent: #e8336c;
+      --primary: #14b8a6;
+      --white: #FFFFFF;
+      --text-light: rgba(23,30,34,0.6);
+      --text-muted: rgba(23,30,34,0.4);
+      --accent-light: rgba(232,51,108,0.1);
+      --primary-light: rgba(20,184,166,0.1);
+      --radius: 20px;
+      --radius-lg: 32px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(251,245,229,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 16px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { font-weight: 900; font-size: 22px; letter-spacing: 1px; }
+    .logo span { color: var(--accent); }
+    .nav-links a {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      margin-left: 28px;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-badge {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-left: 12px;
+      vertical-align: middle;
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -200px; left: -200px;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--primary-light) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '';
+      position: absolute; bottom: -150px; right: -150px;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent-light) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 60px);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .hero h1 .highlight { color: var(--primary); }
+    .hero p {
+      font-size: clamp(16px, 2.5vw, 20px);
+      color: var(--text-light);
+      max-width: 580px;
+      margin-bottom: 40px;
+      position: relative;
+    }
+    .cta-row { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; position: relative; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 16px 36px;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 16px;
+      border: none; cursor: pointer;
+      transition: transform .15s, box-shadow .2s;
+      text-decoration: none;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary {
+      background: var(--primary);
+      color: var(--white);
+      box-shadow: 0 8px 24px rgba(20,184,166,0.3);
+    }
+    .btn-primary:hover { box-shadow: 0 12px 32px rgba(20,184,166,0.4); }
+    .btn-outline {
+      background: var(--white);
+      color: var(--text);
+      border: 2px solid var(--neutral);
+    }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ─── SECTION ─── */
+    section { padding: 80px 24px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 13px;
+      padding: 6px 16px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .section-label-accent {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .section-title {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 900;
+      margin-bottom: 16px;
+      line-height: 1.15;
+    }
+    .section-subtitle {
+      font-size: 17px;
+      color: var(--text-light);
+      max-width: 600px;
+      margin-bottom: 48px;
+    }
+
+    /* ─── STATS ─── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+      margin-bottom: 64px;
+    }
+    .stat-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      text-align: center;
+      border: 1px solid var(--neutral);
+    }
+    .stat-value {
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 14px;
+      color: var(--text-light);
+      font-weight: 600;
+    }
+
+    /* ─── JOURNEY STEPS ─── */
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 32px; }
+    .step {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      border: 1px solid var(--neutral);
+      position: relative;
+      transition: transform .2s;
+    }
+    .step:hover { transform: translateY(-4px); }
+    .step-number {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: var(--white);
+      font-weight: 900;
+      font-size: 20px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+    }
+    .step-icon { font-size: 32px; margin-bottom: 12px; }
+    .step h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .step p { font-size: 14px; color: var(--text-light); line-height: 1.5; }
+
+    /* ─── FEATURES ─── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 32px;
+      border: 1px solid var(--neutral);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(23,30,34,0.08);
+    }
+    .feature-icon {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      margin-bottom: 16px;
+    }
+    .fi-primary { background: var(--primary-light); }
+    .fi-accent { background: var(--accent-light); }
+    .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: 14px; color: var(--text-light); }
+
+    /* ─── COMPARISON ─── */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .compare-card {
+      border-radius: var(--radius);
+      padding: 32px;
+      border: 1px solid var(--neutral);
+    }
+    .compare-old {
+      background: var(--white);
+    }
+    .compare-new {
+      background: linear-gradient(135deg, rgba(20,184,166,0.06) 0%, rgba(232,51,108,0.04) 100%);
+      border-color: var(--primary);
+    }
+    .compare-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .compare-card ul {
+      list-style: none;
+      padding: 0;
+    }
+    .compare-card li {
+      font-size: 14px;
+      color: var(--text-light);
+      padding: 8px 0;
+      border-bottom: 1px solid var(--neutral);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .compare-card li:last-child { border-bottom: none; }
+
+    /* ─── TESTIMONIAL ─── */
+    .testimonials {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .testimonial {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 32px;
+      border: 1px solid var(--neutral);
+    }
+    .testimonial-quote {
+      font-size: 15px;
+      font-style: italic;
+      color: var(--text-light);
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    .testimonial-author {
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .testimonial-role {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ─── CTA BANNER ─── */
+    .cta-banner {
+      background: linear-gradient(135deg, var(--primary) 0%, #0d9488 100%);
+      border-radius: var(--radius-lg);
+      padding: 64px 32px;
+      text-align: center;
+      color: var(--white);
+    }
+    .cta-banner h2 {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+    .cta-banner p {
+      font-size: 17px;
+      opacity: 0.9;
+      max-width: 520px;
+      margin: 0 auto 32px;
+    }
+    .btn-white {
+      background: var(--white);
+      color: var(--primary);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    /* ─── FAQ ─── */
+    .faq-list { max-width: 700px; }
+    .faq-item {
+      border-bottom: 1px solid var(--neutral);
+      padding: 20px 0;
+    }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    .faq-a {
+      font-size: 14px;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    footer .logo { margin-bottom: 8px; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 768px) {
+      nav { padding: 12px 16px; }
+      .nav-links a { margin-left: 16px; font-size: 13px; }
+      section { padding: 60px 16px; }
+      .compare-grid { grid-template-columns: 1fr; }
+      .cta-banner { padding: 48px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div>
+      <span class="logo">ME·<span>WE</span>·GO</span>
+      <span class="nav-badge">для тренеров</span>
+    </div>
+    <div class="nav-links">
+      <a href="#why">Зачем</a>
+      <a href="#how">Как начать</a>
+      <a href="#tools">Инструменты</a>
+      <a href="#faq">Вопросы</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1>Ваши тренировки — <span class="highlight">ваша аудитория</span></h1>
+    <p>Создавайте события, набирайте участников и управляйте записями — всё в одном приложении. Бесплатно.</p>
+    <div class="cta-row">
+      <a href="#how" class="btn btn-primary">Начать бесплатно</a>
+      <a href="#tools" class="btn btn-outline">Что я получу</a>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section>
+    <div class="container">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value">0 ₽</div>
+          <div class="stat-label">Комиссия платформы</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">2 мин</div>
+          <div class="stat-label">Создать событие</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">24/7</div>
+          <div class="stat-label">Онлайн-запись</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">11</div>
+          <div class="stat-label">Тем оформления</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY -->
+  <section id="why" style="background: var(--white); border-radius: var(--radius-lg);">
+    <div class="container">
+      <span class="section-label">Зачем это тренеру</span>
+      <h2 class="section-title">Перестаньте терять клиентов в чатах</h2>
+      <p class="section-subtitle">Сравните: как обычно и как с ME·WE·GO.</p>
+
+      <div class="compare-grid">
+        <div class="compare-card compare-old">
+          <h3>😩 Как обычно</h3>
+          <ul>
+            <li>❌ Записи в WhatsApp/Telegram чатах</li>
+            <li>❌ «Кто завтра придёт?» каждый раз</li>
+            <li>❌ Люди забывают и не приходят</li>
+            <li>❌ Нет понятного расписания</li>
+            <li>❌ Новые клиенты не находят вас</li>
+            <li>❌ Нет отзывов и рейтинга</li>
+            <li>❌ Нет статистики посещений</li>
+          </ul>
+        </div>
+        <div class="compare-card compare-new">
+          <h3>✅ С ME·WE·GO</h3>
+          <ul>
+            <li>✅ Онлайн-запись в 1 клик</li>
+            <li>✅ Видно, кто записан, кто отменил</li>
+            <li>✅ Автоматические напоминания</li>
+            <li>✅ Расписание всегда актуально</li>
+            <li>✅ Новые клиенты находят вас сами</li>
+            <li>✅ Отзывы и рейтинг растут</li>
+            <li>✅ Статистика: кто ходит, кто нет</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW TO START -->
+  <section id="how">
+    <div class="container">
+      <span class="section-label">Как начать</span>
+      <h2 class="section-title">4 шага — и вы принимаете записи</h2>
+      <p class="section-subtitle">Никакой бюрократии. Просто создайте событие и поделитесь ссылкой.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-icon">📲</div>
+          <h3>Скачайте приложение</h3>
+          <p>Установите ME·WE·GO и зарегистрируйтесь. Это бесплатно и занимает 30 секунд.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-icon">✏️</div>
+          <h3>Создайте событие</h3>
+          <p>Заполните: название, вид спорта, дата, время, место, цена, уровень, количество мест.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-icon">🔗</div>
+          <h3>Поделитесь ссылкой</h3>
+          <p>Отправьте ссылку в свои соцсети, чаты или друзьям. Новые клиенты найдут вас и в каталоге.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">4</div>
+          <div class="step-icon">🎉</div>
+          <h3>Принимайте участников</h3>
+          <p>Люди записываются, получают напоминания и приходят. Вы видите список и статистику.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOOLS -->
+  <section id="tools">
+    <div class="container">
+      <span class="section-label section-label-accent">Инструменты</span>
+      <h2 class="section-title">Что вы получаете как организатор</h2>
+      <p class="section-subtitle">Полный набор для управления событиями и участниками.</p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon fi-primary">📋</div>
+          <h3>Создание событий</h3>
+          <p>Удобный визард: название, формат, место, цена, уровень, лимит мест. Всё за 2 минуты.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-accent">👥</div>
+          <h3>Список участников</h3>
+          <p>Видно, кто записан, кто в листе ожидания, кто отменил. В реальном времени.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-primary">🔔</div>
+          <h3>Автоматические напоминания</h3>
+          <p>Участники получают push-уведомления за 24 часа, 2 часа и 30 минут. Меньше «забыл».</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-accent">📊</div>
+          <h3>Статистика</h3>
+          <p>Сколько записались, сколько пришли, средняя оценка. Понимайте свою аудиторию.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-primary">⭐</div>
+          <h3>Рейтинг и отзывы</h3>
+          <p>После каждого события участники оставляют оценку. Хороший рейтинг = больше записей.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-accent">⏳</div>
+          <h3>Лист ожидания</h3>
+          <p>Мест нет? Желающие встают в очередь автоматически. Отмена = следующий получает место.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-primary">🔗</div>
+          <h3>Ссылки и коды</h3>
+          <p>Делитесь событием по ссылке или уникальному коду. Участники находят вас мгновенно.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-accent">🏷️</div>
+          <h3>Промокоды</h3>
+          <p>Создавайте промокоды для скидок и акций. Привлекайте новых участников.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section style="background: var(--white); border-radius: var(--radius-lg);">
+    <div class="container">
+      <span class="section-label">Отзывы</span>
+      <h2 class="section-title">Тренеры уже используют ME·WE·GO</h2>
+      <p class="section-subtitle">Вот что говорят организаторы, которые перешли на платформу.</p>
+
+      <div class="testimonials">
+        <div class="testimonial">
+          <div class="testimonial-quote">«Раньше я тратила час в день на переписку "кто придёт завтра". Теперь всё автоматически: запись, напоминания, список. Я просто провожу тренировки.»</div>
+          <div class="testimonial-author">Анна К.</div>
+          <div class="testimonial-role">Тренер по йоге</div>
+        </div>
+        <div class="testimonial">
+          <div class="testimonial-quote">«За первый месяц ко мне записались 15 новых людей, которых я не знал — они нашли меня через каталог. Без рекламы.»</div>
+          <div class="testimonial-author">Дмитрий С.</div>
+          <div class="testimonial-role">Беговой клуб</div>
+        </div>
+        <div class="testimonial">
+          <div class="testimonial-quote">«Лист ожидания — это магия. Человек отменяет — следующий автоматически получает место. Ни одна тренировка не проходит с пустыми местами.»</div>
+          <div class="testimonial-author">Елена М.</div>
+          <div class="testimonial-role">Функциональный тренинг</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="container">
+      <span class="section-label">Частые вопросы</span>
+      <h2 class="section-title">Вопросы и ответы</h2>
+      <p class="section-subtitle">Самые частые вопросы от тренеров и организаторов.</p>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-q">Это бесплатно?</div>
+          <div class="faq-a">Да, для организаторов платформа бесплатна. Создание событий, управление участниками, статистика — без комиссии.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Могу ли я ставить цену на события?</div>
+          <div class="faq-a">Да, вы устанавливаете любую цену (или делаете событие бесплатным). Оплата происходит между вами и участником напрямую.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Как новые клиенты найдут меня?</div>
+          <div class="faq-a">Ваши события появляются в общем каталоге ME·WE·GO. Пользователи ищут по виду спорта, локации и дате. Плюс вы можете делиться ссылкой.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Что если мест больше нет?</div>
+          <div class="faq-a">Автоматически включается лист ожидания. Если кто-то отменяет — следующий в очереди получает уведомление и 30 минут на подтверждение.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Могу ли я проводить несколько событий в день?</div>
+          <div class="faq-a">Да, без ограничений. Создавайте столько событий, сколько нужно.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Нужен ли мне сайт или соцсети?</div>
+          <div class="faq-a">Нет. ME·WE·GO работает как ваша витрина. Но если у вас есть соцсети — отлично, делитесь ссылками на события оттуда.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section>
+    <div class="container">
+      <div class="cta-banner">
+        <h2>Начните принимать записи сегодня</h2>
+        <p>Скачайте ME·WE·GO, создайте первое событие за 2 минуты и поделитесь ссылкой с клиентами.</p>
+        <a href="#" class="btn btn-white">Начать бесплатно</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="logo">ME·<span style="color:var(--accent);">WE</span>·GO</div>
+    <p>&copy; 2026 ME·WE·GO. Спорт — это вместе.</p>
+    <p style="margin-top: 8px;"><a href="index.html" style="color: var(--primary); text-decoration: none; font-weight: 600;">Лендинг для участников &rarr;</a></p>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ME·WE·GO — Спорт вместе</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FBF5E5;
+      --surface: #AAC4BB;
+      --neutral: #D0D4C5;
+      --text: #171E22;
+      --accent: #e8336c;
+      --primary: #14b8a6;
+      --white: #FFFFFF;
+      --text-light: rgba(23,30,34,0.6);
+      --text-muted: rgba(23,30,34,0.4);
+      --accent-light: rgba(232,51,108,0.1);
+      --primary-light: rgba(20,184,166,0.1);
+      --radius: 20px;
+      --radius-lg: 32px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family:'Montserrat',sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.6;
+      -webkit-font-smoothing:antialiased;
+      overflow-x:hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position:fixed;top:0;left:0;right:0;z-index:100;
+      background:rgba(251,245,229,0.88);
+      backdrop-filter:blur(20px);
+      -webkit-backdrop-filter:blur(20px);
+      padding:14px 32px;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .logo{font-weight:900;font-size:22px;letter-spacing:1px;}
+    .logo span{color:var(--accent);}
+    .nav-links a{color:var(--text);text-decoration:none;font-weight:600;font-size:14px;margin-left:24px;transition:color .2s;}
+    .nav-links a:hover{color:var(--accent);}
+
+    /* ── HERO ── */
+    .hero{
+      min-height:100vh;
+      display:flex;align-items:center;justify-content:center;
+      padding:120px 32px 80px;
+      position:relative;overflow:hidden;
+    }
+    .hero::before{
+      content:'';position:absolute;top:-250px;right:-180px;
+      width:700px;height:700px;border-radius:50%;
+      background:radial-gradient(circle,rgba(232,51,108,0.08) 0%,transparent 70%);
+      pointer-events:none;
+    }
+    .hero::after{
+      content:'';position:absolute;bottom:-200px;left:-200px;
+      width:600px;height:600px;border-radius:50%;
+      background:radial-gradient(circle,rgba(20,184,166,0.08) 0%,transparent 70%);
+      pointer-events:none;
+    }
+    .hero-inner{
+      max-width:1140px;width:100%;
+      display:flex;align-items:center;justify-content:space-between;gap:60px;
+      position:relative;
+    }
+    .hero-text{flex:1;max-width:520px;}
+    .hero-text h1{
+      font-size:clamp(34px,5vw,56px);font-weight:900;line-height:1.1;margin-bottom:20px;
+    }
+    .hero-text h1 .hl{color:var(--accent);}
+    .hero-text p{font-size:18px;color:var(--text-light);margin-bottom:36px;max-width:440px;}
+    .hero-cta{display:flex;gap:14px;flex-wrap:wrap;}
+    .btn{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:15px 32px;border-radius:var(--radius);
+      font-family:inherit;font-weight:700;font-size:15px;
+      border:none;cursor:pointer;transition:transform .15s,box-shadow .2s;text-decoration:none;
+    }
+    .btn:hover{transform:translateY(-2px);}
+    .btn-accent{background:var(--accent);color:var(--white);box-shadow:0 8px 24px rgba(232,51,108,0.3);}
+    .btn-accent:hover{box-shadow:0 12px 32px rgba(232,51,108,0.4);}
+    .btn-outline{background:var(--white);color:var(--text);border:2px solid var(--neutral);}
+    .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+
+    /* ── iPHONE MOCKUP ── */
+    .hero-phone{flex-shrink:0;position:relative;}
+    .iphone{
+      width:280px;height:572px;
+      border-radius:44px;
+      background:#111;
+      padding:14px;
+      box-shadow:
+        0 40px 80px rgba(23,30,34,0.18),
+        0 0 0 2px #333,
+        inset 0 0 0 2px #222;
+      position:relative;
+      overflow:hidden;
+    }
+    .iphone-notch{
+      position:absolute;top:10px;left:50%;transform:translateX(-50%);
+      width:120px;height:28px;
+      background:#111;
+      border-radius:0 0 18px 18px;
+      z-index:10;
+    }
+    .iphone-screen{
+      width:100%;height:100%;
+      border-radius:32px;
+      overflow:hidden;
+      position:relative;
+      background:var(--bg);
+    }
+    .iphone-screen img{
+      width:100%;height:100%;
+      object-fit:cover;
+      object-position:top center;
+      display:block;
+      transition:opacity .5s ease;
+    }
+    .iphone-screen img.hidden{opacity:0;position:absolute;top:0;left:0;}
+    .iphone-screen img.visible{opacity:1;position:relative;}
+
+    /* phone dots */
+    .phone-dots{
+      display:flex;justify-content:center;gap:8px;
+      margin-top:16px;
+    }
+    .phone-dot{
+      width:10px;height:10px;border-radius:50%;
+      background:var(--neutral);cursor:pointer;
+      transition:background .2s,transform .2s;
+    }
+    .phone-dot.active{background:var(--accent);transform:scale(1.3);}
+
+    /* second phone (tilted) */
+    .iphone-secondary{
+      position:absolute;
+      bottom:-30px;right:-100px;
+      transform:rotate(8deg) scale(0.72);
+      opacity:0.7;
+      z-index:-1;
+    }
+
+    /* ── SECTION COMMON ── */
+    section{padding:80px 24px;}
+    .container{max-width:1100px;margin:0 auto;}
+    .section-label{
+      display:inline-block;
+      font-weight:700;font-size:12px;
+      padding:6px 16px;border-radius:999px;
+      margin-bottom:14px;text-transform:uppercase;letter-spacing:1.2px;
+    }
+    .sl-accent{background:var(--accent-light);color:var(--accent);}
+    .sl-primary{background:var(--primary-light);color:var(--primary);}
+    .section-title{font-size:clamp(26px,4vw,40px);font-weight:900;margin-bottom:14px;line-height:1.15;}
+    .section-subtitle{font-size:16px;color:var(--text-light);max-width:560px;margin-bottom:48px;}
+
+    /* ── STEPS ── */
+    .steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;}
+    .step-card{
+      background:var(--white);border-radius:var(--radius);padding:28px 22px;
+      border:1px solid var(--neutral);transition:transform .2s;
+    }
+    .step-card:hover{transform:translateY(-4px);}
+    .step-num{
+      width:42px;height:42px;border-radius:50%;
+      background:var(--accent);color:var(--white);
+      font-weight:900;font-size:18px;
+      display:flex;align-items:center;justify-content:center;
+      margin-bottom:14px;
+    }
+    .step-icon{font-size:28px;margin-bottom:10px;}
+    .step-card h3{font-size:16px;font-weight:700;margin-bottom:6px;}
+    .step-card p{font-size:13px;color:var(--text-light);line-height:1.5;}
+
+    /* ── FEATURES ── */
+    .feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px;}
+    .feat{
+      background:var(--white);border-radius:var(--radius);padding:28px;
+      border:1px solid var(--neutral);transition:transform .2s,box-shadow .2s;
+    }
+    .feat:hover{transform:translateY(-4px);box-shadow:0 8px 20px rgba(23,30,34,0.07);}
+    .feat-ic{
+      width:52px;height:52px;border-radius:14px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:26px;margin-bottom:14px;
+    }
+    .feat h3{font-size:16px;font-weight:700;margin-bottom:6px;}
+    .feat p{font-size:13px;color:var(--text-light);}
+
+    /* ── SCREENSHOTS SECTION ── */
+    .screens-section{
+      background:var(--white);border-radius:var(--radius-lg);
+      text-align:center;
+    }
+    .screens-row{
+      display:flex;justify-content:center;gap:40px;flex-wrap:wrap;
+      margin-top:16px;
+    }
+    .screen-phone{position:relative;}
+    .screen-phone .iphone{width:240px;height:490px;border-radius:38px;padding:12px;}
+    .screen-phone .iphone-notch{width:100px;height:24px;border-radius:0 0 14px 14px;top:8px;}
+    .screen-phone .iphone-screen{border-radius:28px;}
+    .screen-label{
+      margin-top:14px;font-size:14px;font-weight:700;color:var(--text);
+    }
+    .screen-desc{font-size:12px;color:var(--text-muted);margin-top:2px;}
+
+    /* ── AUDIENCE ── */
+    .aud-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px;}
+    .aud-card{
+      background:var(--white);border-radius:var(--radius);padding:28px;
+      text-align:center;border:1px solid var(--neutral);
+    }
+    .aud-emoji{font-size:42px;margin-bottom:12px;}
+    .aud-card h3{font-size:16px;font-weight:700;margin-bottom:6px;}
+    .aud-card p{font-size:13px;color:var(--text-light);}
+
+    /* ── CTA BANNER ── */
+    .cta-banner{
+      background:linear-gradient(135deg,var(--accent) 0%,#c4285a 100%);
+      border-radius:var(--radius-lg);padding:60px 32px;
+      text-align:center;color:var(--white);
+    }
+    .cta-banner h2{font-size:clamp(26px,4vw,40px);font-weight:900;margin-bottom:14px;}
+    .cta-banner p{font-size:16px;opacity:0.9;max-width:480px;margin:0 auto 28px;}
+    .btn-white{background:var(--white);color:var(--accent);box-shadow:0 4px 16px rgba(0,0,0,0.15);}
+
+    /* ── FOOTER ── */
+    footer{padding:48px 24px;text-align:center;color:var(--text-muted);font-size:14px;}
+    footer .logo{margin-bottom:8px;}
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:900px){
+      .hero-inner{flex-direction:column;text-align:center;}
+      .hero-text{max-width:100%;}
+      .hero-text p{margin-left:auto;margin-right:auto;}
+      .hero-cta{justify-content:center;}
+      .iphone-secondary{display:none;}
+      .hero-phone{margin-top:32px;}
+    }
+    @media(max-width:600px){
+      nav{padding:12px 16px;}
+      .nav-links a{margin-left:14px;font-size:12px;}
+      section{padding:56px 16px;}
+      .iphone{width:220px;height:450px;border-radius:36px;padding:10px;}
+      .iphone-notch{width:90px;height:22px;border-radius:0 0 14px 14px;}
+      .iphone-screen{border-radius:26px;}
+      .screen-phone .iphone{width:180px;height:368px;border-radius:30px;padding:10px;}
+      .screen-phone .iphone-screen{border-radius:22px;}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="logo">ME·<span>WE</span>·GO</div>
+    <div class="nav-links">
+      <a href="#how">Как работает</a>
+      <a href="#features">Возможности</a>
+      <a href="#screens">Приложение</a>
+      <a href="#audience">Для кого</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <h1>Спорт — это <span class="hl">вместе</span></h1>
+        <p>Находи тренировки и события рядом, записывайся в 1 клик и приходи. Без лишних чатов и поиска.</p>
+        <div class="hero-cta">
+          <a href="#screens" class="btn btn-accent">Смотреть приложение</a>
+          <a href="#how" class="btn btn-outline">Как это работает</a>
+        </div>
+      </div>
+
+      <div class="hero-phone">
+        <!-- Main phone -->
+        <div class="iphone">
+          <div class="iphone-notch"></div>
+          <div class="iphone-screen">
+            <img id="heroScreen" src="screenshots/screen1.png" alt="ME·WE·GO — категории" class="visible">
+          </div>
+        </div>
+        <!-- Dots -->
+        <div class="phone-dots">
+          <div class="phone-dot active" onclick="switchScreen(0)"></div>
+          <div class="phone-dot" onclick="switchScreen(1)"></div>
+        </div>
+        <!-- Second phone tilted behind -->
+        <div class="iphone iphone-secondary">
+          <div class="iphone-notch"></div>
+          <div class="iphone-screen">
+            <img src="screenshots/screen2.png" alt="ME·WE·GO — профиль">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how">
+    <div class="container">
+      <span class="section-label sl-accent">Как это работает</span>
+      <h2 class="section-title">От скачивания до тренировки — 6 шагов</h2>
+      <p class="section-subtitle">Никаких длинных анкет. Просто скачайте, найдите и запишитесь.</p>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-icon">📲</div>
+          <h3>Скачайте</h3>
+          <p>Установите ME·WE·GO из App Store или Google Play. Бесплатно.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-icon">⚡</div>
+          <h3>Быстрый вход</h3>
+          <p>Telegram или email — за 10 секунд, без паролей.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-icon">🔍</div>
+          <h3>Найдите событие</h3>
+          <p>Фильтруйте по спорту, дате, уровню или локации.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-icon">✅</div>
+          <h3>Запишитесь</h3>
+          <p>Нажмите «Записаться» — место ваше. Напоминание придёт.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">5</div>
+          <div class="step-icon">🏃</div>
+          <h3>Приходите</h3>
+          <p>Тренируйтесь вместе с людьми. Получайте удовольствие.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">6</div>
+          <div class="step-icon">🔄</div>
+          <h3>Возвращайтесь</h3>
+          <p>Оцените, найдите похожее и запишитесь снова. Прогресс копится!</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="container">
+      <span class="section-label sl-primary">Возможности</span>
+      <h2 class="section-title">Всё для комфортного спорта</h2>
+      <p class="section-subtitle">ME·WE·GO — не просто список событий, а полная экосистема для активной жизни.</p>
+      <div class="feat-grid">
+        <div class="feat">
+          <div class="feat-ic" style="background:var(--accent-light);">🗓</div>
+          <h3>Умный календарь</h3>
+          <p>Все записи в одном месте. Напоминания за 24 ч, 2 ч и 30 мин.</p>
+        </div>
+        <div class="feat">
+          <div class="feat-ic" style="background:var(--primary-light);">📍</div>
+          <h3>События рядом</h3>
+          <p>Йога, бег, функционал, велосипед — в вашем районе.</p>
+        </div>
+        <div class="feat">
+          <div class="feat-ic" style="background:var(--accent-light);">⭐</div>
+          <h3>Рейтинг и отзывы</h3>
+          <p>Отзывы участников помогут выбрать лучших организаторов.</p>
+        </div>
+        <div class="feat">
+          <div class="feat-ic" style="background:var(--primary-light);">🏆</div>
+          <h3>Прогресс</h3>
+          <p>Очки, статусы, уровни — мотивация через действие.</p>
+        </div>
+        <div class="feat">
+          <div class="feat-ic" style="background:var(--accent-light);">👥</div>
+          <h3>Лист ожидания</h3>
+          <p>Нет мест? Встаньте в очередь — следующий получает место.</p>
+        </div>
+        <div class="feat">
+          <div class="feat-ic" style="background:var(--primary-light);">🎨</div>
+          <h3>11 тем</h3>
+          <p>От пастельных до тёмных — настройте приложение под себя.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREENSHOTS -->
+  <section id="screens" class="screens-section">
+    <div class="container">
+      <span class="section-label sl-accent">Внутри приложения</span>
+      <h2 class="section-title">Посмотрите, как это выглядит</h2>
+      <p class="section-subtitle" style="margin-left:auto;margin-right:auto;">Реальные экраны ME·WE·GO. Чисто, понятно, красиво.</p>
+
+      <div class="screens-row">
+        <div class="screen-phone">
+          <div class="iphone">
+            <div class="iphone-notch"></div>
+            <div class="iphone-screen">
+              <img src="screenshots/screen1.png" alt="Главный экран — категории">
+            </div>
+          </div>
+          <div class="screen-label">Категории</div>
+          <div class="screen-desc">Йога, Бег, Велоспорт, Силовые</div>
+        </div>
+
+        <div class="screen-phone">
+          <div class="iphone">
+            <div class="iphone-notch"></div>
+            <div class="iphone-screen">
+              <img src="screenshots/screen2.png" alt="Профиль и панель организатора">
+            </div>
+          </div>
+          <div class="screen-label">Профиль</div>
+          <div class="screen-desc">Панель организатора и статистика</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AUDIENCE -->
+  <section id="audience">
+    <div class="container">
+      <span class="section-label sl-primary">Для кого</span>
+      <h2 class="section-title">ME·WE·GO подходит каждому</h2>
+      <p class="section-subtitle">Неважно, новичок вы или опытный — здесь найдётся ваше.</p>
+      <div class="aud-grid">
+        <div class="aud-card">
+          <div class="aud-emoji">🌱</div>
+          <h3>Новичкам</h3>
+          <p>Фильтр «Для новичков» покажет события с низким порогом входа.</p>
+        </div>
+        <div class="aud-card">
+          <div class="aud-emoji">💪</div>
+          <h3>Опытным</h3>
+          <p>Продвинутые тренировки, забеги, соревнования — вызов под рукой.</p>
+        </div>
+        <div class="aud-card">
+          <div class="aud-emoji">🧘</div>
+          <h3>Разнообразие</h3>
+          <p>Йога утром, бег вечером, бассейн в выходные. Каждую неделю.</p>
+        </div>
+        <div class="aud-card">
+          <div class="aud-emoji">📣</div>
+          <h3>Организаторам</h3>
+          <p>Создавайте события, управляйте участниками, растите аудиторию.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section>
+    <div class="container">
+      <div class="cta-banner">
+        <h2>Начните прямо сейчас</h2>
+        <p>Скачайте ME·WE·GO, найдите первое событие и запишитесь. Это бесплатно.</p>
+        <a href="#" class="btn btn-white">Скачать приложение</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="logo">ME·<span style="color:var(--accent);">WE</span>·GO</div>
+    <p>&copy; 2026 ME·WE·GO. Спорт — это вместе.</p>
+  </footer>
+
+  <!-- SCRIPT: screenshot slider in hero -->
+  <script>
+    const screens = ['screenshots/screen1.png', 'screenshots/screen2.png'];
+    let current = 0;
+    const heroImg = document.getElementById('heroScreen');
+    const dots = document.querySelectorAll('.phone-dot');
+
+    function switchScreen(idx) {
+      current = idx;
+      heroImg.src = screens[current];
+      dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    }
+
+    // Auto-rotate every 4 seconds
+    setInterval(() => {
+      switchScreen((current + 1) % screens.length);
+    }, 4000);
+  </script>
+
+</body>
+</html>

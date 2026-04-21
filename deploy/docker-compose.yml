@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mewego
+      POSTGRES_USER: mewego
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET}
+      AUTH_JWT_EXPIRES_IN: ${AUTH_JWT_EXPIRES_IN:-180d}
+      ALLOW_DEV_HEADERS: ${ALLOW_DEV_HEADERS:-false}
+      ALLOW_DEV_ROLE_OVERRIDE: ${ALLOW_DEV_ROLE_OVERRIDE:-false}
+      ENABLE_CRON_JOBS: ${ENABLE_CRON_JOBS:-false}
+      # Email (optional)
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-yandex360}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}
+      YANDEX_SMTP_HOST: ${YANDEX_SMTP_HOST:-}
+      YANDEX_SMTP_PORT: ${YANDEX_SMTP_PORT:-465}
+      YANDEX_SMTP_SECURE: ${YANDEX_SMTP_SECURE:-true}
+      YANDEX_SMTP_USER: ${YANDEX_SMTP_USER:-}
+      YANDEX_SMTP_PASSWORD: ${YANDEX_SMTP_PASSWORD:-}
+      EMAIL_VERIFY_TTL_MINUTES: ${EMAIL_VERIFY_TTL_MINUTES:-1440}
+      PASSWORD_RESET_TTL_MINUTES: ${PASSWORD_RESET_TTL_MINUTES:-30}
+      APP_WEB_URL: ${APP_WEB_URL:-https://api.mewego.ru}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-https://api.mewego.ru}
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pg_data:
+  caddy_data:
+  caddy_config:
+

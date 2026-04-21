@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ME·WE·GO — Спорт вместе</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FBF5E5;
+      --surface: #AAC4BB;
+      --neutral: #D0D4C5;
+      --text: #171E22;
+      --accent: #e8336c;
+      --primary: #14b8a6;
+      --white: #FFFFFF;
+      --text-light: rgba(23,30,34,0.6);
+      --text-muted: rgba(23,30,34,0.4);
+      --accent-light: rgba(232,51,108,0.1);
+      --primary-light: rgba(20,184,166,0.1);
+      --radius: 20px;
+      --radius-lg: 32px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(251,245,229,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 16px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { font-weight: 900; font-size: 22px; letter-spacing: 1px; }
+    .logo span { color: var(--accent); }
+    nav a {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      margin-left: 28px;
+      transition: color .2s;
+    }
+    nav a:hover { color: var(--accent); }
+
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -200px; right: -200px;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent-light) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '';
+      position: absolute; bottom: -150px; left: -150px;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--primary-light) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .hero h1 .highlight { color: var(--accent); }
+    .hero p {
+      font-size: clamp(16px, 2.5vw, 20px);
+      color: var(--text-light);
+      max-width: 560px;
+      margin-bottom: 40px;
+      position: relative;
+    }
+    .cta-row { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; position: relative; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 16px 36px;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 16px;
+      border: none; cursor: pointer;
+      transition: transform .15s, box-shadow .2s;
+      text-decoration: none;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-accent {
+      background: var(--accent);
+      color: var(--white);
+      box-shadow: 0 8px 24px rgba(232,51,108,0.3);
+    }
+    .btn-accent:hover { box-shadow: 0 12px 32px rgba(232,51,108,0.4); }
+    .btn-outline {
+      background: var(--white);
+      color: var(--text);
+      border: 2px solid var(--neutral);
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ─── SECTION ─── */
+    section { padding: 80px 24px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 13px;
+      padding: 6px 16px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .section-title {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 900;
+      margin-bottom: 16px;
+      line-height: 1.15;
+    }
+    .section-subtitle {
+      font-size: 17px;
+      color: var(--text-light);
+      max-width: 600px;
+      margin-bottom: 48px;
+    }
+
+    /* ─── JOURNEY STEPS ─── */
+    .journey { background: var(--white); border-radius: var(--radius-lg); }
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 32px; }
+    .step {
+      background: var(--bg);
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      position: relative;
+      transition: transform .2s;
+    }
+    .step:hover { transform: translateY(-4px); }
+    .step-number {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--white);
+      font-weight: 900;
+      font-size: 20px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+    }
+    .step-icon { font-size: 32px; margin-bottom: 12px; }
+    .step h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .step p { font-size: 14px; color: var(--text-light); line-height: 1.5; }
+
+    /* ─── FEATURES ─── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 32px;
+      border: 1px solid var(--neutral);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(23,30,34,0.08);
+    }
+    .feature-icon {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      margin-bottom: 16px;
+    }
+    .fi-accent { background: var(--accent-light); }
+    .fi-primary { background: var(--primary-light); }
+    .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: 14px; color: var(--text-light); }
+
+    /* ─── FOR WHO ─── */
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .audience-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 32px;
+      text-align: center;
+      border: 1px solid var(--neutral);
+    }
+    .audience-emoji { font-size: 48px; margin-bottom: 16px; }
+    .audience-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .audience-card p { font-size: 14px; color: var(--text-light); }
+
+    /* ─── HOW IT WORKS ─── */
+    .how-list { list-style: none; max-width: 700px; }
+    .how-list li {
+      display: flex; align-items: flex-start; gap: 20px;
+      margin-bottom: 32px;
+    }
+    .how-num {
+      flex-shrink: 0;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: var(--white);
+      font-weight: 900;
+      font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .how-list h4 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .how-list p { font-size: 14px; color: var(--text-light); }
+
+    /* ─── THEMES SHOWCASE ─── */
+    .themes-row {
+      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+    }
+    .theme-chip {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--white);
+      border: 1px solid var(--neutral);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .theme-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    /* ─── CTA BANNER ─── */
+    .cta-banner {
+      background: linear-gradient(135deg, var(--accent) 0%, #c4285a 100%);
+      border-radius: var(--radius-lg);
+      padding: 64px 32px;
+      text-align: center;
+      color: var(--white);
+    }
+    .cta-banner h2 {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+    .cta-banner p {
+      font-size: 17px;
+      opacity: 0.9;
+      max-width: 500px;
+      margin: 0 auto 32px;
+    }
+    .btn-white {
+      background: var(--white);
+      color: var(--accent);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    footer .logo { margin-bottom: 8px; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 768px) {
+      nav { padding: 12px 16px; }
+      nav a { margin-left: 16px; font-size: 13px; }
+      section { padding: 60px 16px; }
+      .cta-banner { padding: 48px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="logo">ME·<span>WE</span>·GO</div>
+    <div>
+      <a href="#journey">Как это работает</a>
+      <a href="#features">Возможности</a>
+      <a href="#audience">Для кого</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1>Спорт — это <span class="highlight">вместе</span></h1>
+    <p>Находи тренировки и события рядом, записывайся в 1 клик и приходи. Без лишних чатов и поиска.</p>
+    <div class="cta-row">
+      <a href="#journey" class="btn btn-accent">Узнать больше</a>
+      <a href="#" class="btn btn-outline">Скачать приложение</a>
+    </div>
+  </section>
+
+  <!-- JOURNEY -->
+  <section id="journey" class="journey">
+    <div class="container">
+      <span class="section-label">Путь пользователя</span>
+      <h2 class="section-title">Всё просто — от скачивания до тренировки</h2>
+      <p class="section-subtitle">Никаких длинных анкет и сложных настроек. Вот как это работает:</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-icon">📲</div>
+          <h3>Скачайте приложение</h3>
+          <p>Установите ME·WE·GO из App Store или Google Play. Это бесплатно.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-icon">⚡</div>
+          <h3>Быстрый вход</h3>
+          <p>Войдите через Telegram или email за 10 секунд. Без паролей и длинных форм.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-icon">🔍</div>
+          <h3>Найдите событие</h3>
+          <p>Листайте карточки событий. Фильтруйте по виду спорта, дате, уровню или локации.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">4</div>
+          <div class="step-icon">✅</div>
+          <h3>Запишитесь</h3>
+          <p>Нажмите «Записаться» — место закреплено за вами. Получите напоминание перед стартом.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">5</div>
+          <div class="step-icon">🏃</div>
+          <h3>Приходите</h3>
+          <p>Приходите на тренировку, знакомьтесь с людьми и получайте удовольствие от спорта.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">6</div>
+          <div class="step-icon">🔄</div>
+          <h3>Возвращайтесь</h3>
+          <p>Оцените событие, посмотрите похожие и запишитесь снова. Прогресс копится!</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="container">
+      <span class="section-label">Возможности</span>
+      <h2 class="section-title">Всё для комфортного спорта</h2>
+      <p class="section-subtitle">ME·WE·GO — это не просто список событий, а полная экосистема для активного образа жизни.</p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon fi-accent">🗓</div>
+          <h3>Умный календарь</h3>
+          <p>Все ваши записи в одном месте. Напоминания за 24 часа, 2 часа и 30 минут до старта.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-primary">📍</div>
+          <h3>События рядом</h3>
+          <p>Йога, бег, функционал, велосипед — находите тренировки в вашем районе.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-accent">⭐</div>
+          <h3>Рейтинг и отзывы</h3>
+          <p>Читайте отзывы других участников и выбирайте лучших организаторов.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-primary">🏆</div>
+          <h3>Прогресс и достижения</h3>
+          <p>Копите очки, повышайте статус и отслеживайте свой путь в спорте.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-accent">👥</div>
+          <h3>Лист ожидания</h3>
+          <p>Если мест нет — встаньте в очередь. Как только кто-то отменит — вы первый.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-primary">🎨</div>
+          <h3>11 тем оформления</h3>
+          <p>Настройте внешний вид под себя — от пастельных до тёмных тем.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOR WHO -->
+  <section id="audience" style="background: var(--white); border-radius: var(--radius-lg);">
+    <div class="container">
+      <span class="section-label">Для кого</span>
+      <h2 class="section-title">ME·WE·GO подходит каждому</h2>
+      <p class="section-subtitle">Неважно, новичок вы или опытный спортсмен — здесь найдётся то, что вам нужно.</p>
+
+      <div class="audience-grid">
+        <div class="audience-card">
+          <div class="audience-emoji">🌱</div>
+          <h3>Новичкам</h3>
+          <p>Не знаете, с чего начать? Фильтр «Для новичков» покажет события с низким порогом входа и дружелюбной атмосферой.</p>
+        </div>
+        <div class="audience-card">
+          <div class="audience-emoji">💪</div>
+          <h3>Опытным</h3>
+          <p>Ищете вызов? Продвинутые тренировки, забеги и соревнования — всё под рукой.</p>
+        </div>
+        <div class="audience-card">
+          <div class="audience-emoji">🧘</div>
+          <h3>Любителям разнообразия</h3>
+          <p>Йога утром, бег вечером, бассейн в выходные. Пробуйте новое каждую неделю.</p>
+        </div>
+        <div class="audience-card">
+          <div class="audience-emoji">📣</div>
+          <h3>Организаторам</h3>
+          <p>Создавайте события, управляйте участниками, получайте отзывы и растите аудиторию.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS (details) -->
+  <section>
+    <div class="container">
+      <span class="section-label">Подробнее</span>
+      <h2 class="section-title">Что вас ждёт внутри</h2>
+      <p class="section-subtitle">Несколько деталей, которые делают ME·WE·GO удобнее.</p>
+
+      <ul class="how-list">
+        <li>
+          <div class="how-num">1</div>
+          <div>
+            <h4>Карточки событий</h4>
+            <p>Каждое событие — понятная карточка: что, где, когда, для кого, сколько стоит. Никакой «воды».</p>
+          </div>
+        </li>
+        <li>
+          <div class="how-num">2</div>
+          <div>
+            <h4>Напоминания</h4>
+            <p>Мы напомним вам о тренировке заранее, чтобы вы точно не забыли. Push-уведомления настраиваются.</p>
+          </div>
+        </li>
+        <li>
+          <div class="how-num">3</div>
+          <div>
+            <h4>Организатор с рейтингом</h4>
+            <p>Видите, кто проводит событие, его рейтинг и сколько событий уже провёл.</p>
+          </div>
+        </li>
+        <li>
+          <div class="how-num">4</div>
+          <div>
+            <h4>Отзывы после события</h4>
+            <p>После тренировки можно оставить оценку и короткий отзыв — это помогает другим выбирать.</p>
+          </div>
+        </li>
+        <li>
+          <div class="how-num">5</div>
+          <div>
+            <h4>Ваш прогресс</h4>
+            <p>Очки, статус, история посещений — видно, как вы растёте. Мотивация через действие.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- THEMES -->
+  <section style="text-align: center;">
+    <div class="container">
+      <span class="section-label">Персонализация</span>
+      <h2 class="section-title">11 тем на любой вкус</h2>
+      <p class="section-subtitle" style="margin-left: auto; margin-right: auto;">Светлые, тёмные, пастельные — выберите ту, что подходит именно вам.</p>
+      <div class="themes-row">
+        <div class="theme-chip"><span class="theme-dot" style="background:#FBF5E5;"></span> Пастельная</div>
+        <div class="theme-chip"><span class="theme-dot" style="background:#FFF7F9;"></span> Розовая</div>
+        <div class="theme-chip"><span class="theme-dot" style="background:#FAF8FF;"></span> Лавандовая</div>
+        <div class="theme-chip"><span class="theme-dot" style="background:#F6F8FC;"></span> Светлая</div>
+        <div class="theme-chip"><span class="theme-dot" style="background:#FFF8EF;"></span> Тёплая</div>
+        <div class="theme-chip"><span class="theme-dot" style="background:#F2FBF7;"></span> Мятная</div>
+        <div class="theme-chip"><span class="theme-dot" style="background:#11191F; border-color:rgba(255,255,255,0.2);"></span> Графит</div>
+        <div class="theme-chip"><span class="theme-dot" style="background:#0D1117; border-color:rgba(255,255,255,0.2);"></span> Синяя ночь</div>
+        <div class="theme-chip"><span class="theme-dot" style="background:#0B0F14; border-color:rgba(255,255,255,0.2);"></span> Ночная</div>
+        <div class="theme-chip"><span class="theme-dot" style="background:#000000; border-color:rgba(255,255,255,0.3);"></span> AMOLED</div>
+        <div class="theme-chip"><span class="theme-dot" style="background:#0B1320; border-color:rgba(255,255,255,0.2);"></span> Nord</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section>
+    <div class="container">
+      <div class="cta-banner">
+        <h2>Начните прямо сейчас</h2>
+        <p>Скачайте ME·WE·GO, найдите первое событие и запишитесь. Это бесплатно.</p>
+        <a href="#" class="btn btn-white">Скачать приложение</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="logo">ME·<span style="color:var(--accent);">WE</span>·GO</div>
+    <p>&copy; 2026 ME·WE·GO. Спорт — это вместе.</p>
+  </footer>
+
+</body>
+</html>

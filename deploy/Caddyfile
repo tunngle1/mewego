@@ -1,0 +1,14 @@
+api.mewego.ru {
+  encode zstd gzip
+
+  @api path /api/*
+  handle @api {
+    reverse_proxy backend:3000
+  }
+
+  # Optional: serve 404 for everything else on api subdomain
+  handle {
+    respond "Not Found" 404
+  }
+}
+
