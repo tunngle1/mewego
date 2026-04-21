@@ -96,7 +96,10 @@ const sendEmailWithTimeout = async (payload: Parameters<typeof sendEmail>[0]) =>
   ]);
 };
 
-const issueEmailVerification = async (user: { id: string; email: string; emailNormalized: string }) => {
+const issueEmailVerification = async (
+  user: { id: string; email: string; emailNormalized: string },
+  options?: { sendAsync?: boolean }
+) => {
   const expiresAt = new Date(Date.now() + EMAIL_VERIFY_TTL_MINUTES * 60 * 1000);
   let code = '';
 
@@ -139,7 +142,7 @@ const issueEmailVerification = async (user: { id: string; email: string; emailNo
     return { deliveryStatus: 'skipped' as const };
   }
 
-  try {
+  const run = async () => {
     const info = await sendEmailWithTimeout({
       to: user.email,
       subject: message.subject,
@@ -156,6 +159,26 @@ const issueEmailVerification = async (user: { id: string; email: string; emailNo
       providerMessageId: info.messageId || null,
       metadataJson: JSON.stringify({ codeLength: code.length }),
     });
+  };
+
+  if (options?.sendAsync) {
+    run().catch((error: any) => {
+      logEmailResult({
+        userId: user.id,
+        email: user.email,
+        templateKey: 'verify_email',
+        category: 'transactional',
+        status: 'failed',
+        error: error?.message || 'Failed to send verification email',
+        metadataJson: JSON.stringify({ codeLength: code.length }),
+      }).catch(() => {});
+      console.error('[EmailAuth] verify email send async error:', error);
+    });
+    return { deliveryStatus: 'sent' as const };
+  }
+
+  try {
+    await run();
     return { deliveryStatus: 'sent' as const };
   } catch (error: any) {
     await logEmailResult({
@@ -285,11 +308,14 @@ router.post('/register', async (req: Request, res: Response) => {
       },
     });
 
-    const verification = await issueEmailVerification({
-      id: updatedUser.id,
-      email: emailRaw,
-      emailNormalized,
-    }).catch((error: any) => ({
+    const verification = await issueEmailVerification(
+      {
+        id: updatedUser.id,
+        email: emailRaw,
+        emailNormalized,
+      },
+      { sendAsync: true }
+    ).catch((error: any) => ({
       deliveryStatus: 'failed' as const,
       error: error?.message || 'Failed to send verification email',
     }));
@@ -377,11 +403,14 @@ router.post('/verify-email/request', async (req: Request, res: Response) => {
       },
     });
 
-    const result = await issueEmailVerification({
-      id: user.id,
-      email: user.email,
-      emailNormalized: user.emailNormalized || emailNormalized,
-    }).catch(() => ({ deliveryStatus: 'failed' as const }));
+    const result = await issueEmailVerification(
+      {
+        id: user.id,
+        email: user.email,
+        emailNormalized: user.emailNormalized || emailNormalized,
+      },
+      { sendAsync: true }
+    ).catch(() => ({ deliveryStatus: 'failed' as const }));
     res.json({ ok: true, deliveryStatus: result.deliveryStatus });
   } catch (error) {
     console.error('[EmailAuth] POST /verify-email/request error:', error);
