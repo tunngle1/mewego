@@ -37,6 +37,9 @@ RUN npm ci --omit=dev
 COPY prisma ./prisma
 COPY --from=build /app/dist ./dist
 
+# Ensure Prisma Client exists in runtime image
+RUN npx prisma generate
+
 EXPOSE 3000
 
 # Run migrations on startup, then start server
