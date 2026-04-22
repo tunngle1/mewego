@@ -88,8 +88,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   const tabBarStyle = {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.full,
-    marginHorizontal: 16,
-    marginBottom: insets.bottom > 0 ? insets.bottom : 12,
     paddingVertical: 8,
     paddingHorizontal: 8,
     ...shadows.lg,
@@ -110,13 +108,12 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
     router.push('/organizer-event/create');
   };
 
-  // Build tabs with optional center FAB for organizers
-  const renderTabs = () => {
+  // Только 4 вкладки в ряду. FAB вынесен в отдельный absolute-слой — иначе flex + borderRadius
+  // на части устройств обрезали «плавающую» кнопку при смене вкладки.
+  const renderTabItems = () => {
     const elements: React.ReactNode[] = [];
-    const routeNames = state.routes.map((r: any) => r.name);
 
     state.routes.forEach((route: any, index: number) => {
-      const { options } = descriptors[route.key];
       const isFocused = state.index === index;
       const config = TAB_CONFIG[route.name];
 
@@ -152,21 +149,29 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           onLongPress={onLongPress}
         />
       );
-
-      // Insert FAB after 2nd tab (bookings) for organizers only
-      if (index === 1 && isOrganizer) {
-        elements.push(
-          <CenterButton key="fab-create" onPress={handleCreateEvent} />
-        );
-      }
     });
 
     return elements;
   };
 
+  const insetsBottom = insets.bottom > 0 ? insets.bottom : 12;
+
   return (
-    <View style={[styles.tabBarContainer, tabBarStyle]}>
-      {renderTabs()}
+    <View
+      style={[
+        styles.tabBarOuter,
+        {
+          marginBottom: insetsBottom,
+        },
+      ]}
+      pointerEvents="box-none"
+    >
+      {isOrganizer ? (
+        <View style={styles.fabAnchor} pointerEvents="box-none">
+          <CenterButton onPress={handleCreateEvent} />
+        </View>
+      ) : null}
+      <View style={[styles.tabBarPill, tabBarStyle]}>{renderTabItems()}</View>
     </View>
   );
 }
@@ -188,14 +193,31 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
+  tabBarOuter: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    marginHorizontal: 16,
+    alignItems: 'center',
+    overflow: 'visible',
+  },
+  fabAnchor: {
+    position: 'absolute',
+    top: -28,
+    left: '50%',
+    marginLeft: -28,
+    zIndex: 20,
+    ...Platform.select({
+      android: { elevation: 16 },
+      default: {},
+    }),
+  },
+  tabBarPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    width: '100%',
   },
   tabItem: {
     flex: 1,
@@ -214,6 +236,5 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -28,
   },
 });

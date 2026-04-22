@@ -10,6 +10,17 @@ export default function Index() {
   const logout = useAppStore((s) => s.logout);
   const [checking, setChecking] = useState(false);
   const [checkedOnce, setCheckedOnce] = useState(false);
+  const [storeHydrated, setStoreHydrated] = useState(() => useAppStore.persist.hasHydrated());
+
+  useEffect(() => {
+    const done = useAppStore.persist.onFinishHydration(() => {
+      setStoreHydrated(true);
+    });
+    if (useAppStore.persist.hasHydrated()) {
+      setStoreHydrated(true);
+    }
+    return done;
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -98,6 +109,14 @@ export default function Index() {
       mounted = false;
     };
   }, [isAuthenticated, isTestSession, user?.id, updateUser, logout]);
+
+  if (!storeHydrated) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
 
   if (isFirstLaunch || !onboardingCompleted) {
     return <Redirect href="/onboarding" />;

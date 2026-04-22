@@ -34,6 +34,7 @@
       "expo-font",
       "@react-native-community/datetimepicker",
       "./plugins/withYandexMaps",
+      "./plugins/withAndroidNoAutoBackup",
       [
         "expo-build-properties",
         {
