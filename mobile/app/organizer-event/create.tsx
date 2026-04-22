@@ -123,6 +123,7 @@ export default function OrganizerEventCreateScreen() {
   const [routeFinish, setRouteFinish] = useState('');
   const [locationLat, setLocationLat] = useState<number | null>(null);
   const [locationLng, setLocationLng] = useState<number | null>(null);
+  const [geocoding, setGeocoding] = useState(false);
   const [capacity, setCapacity] = useState('');
   const [durationMin, setDurationMin] = useState('60');
   const [priceType, setPriceType] = useState<OrganizerPriceType>('free');
@@ -465,6 +466,26 @@ export default function OrganizerEventCreateScreen() {
     },
     pickerFieldDisabled: {
       opacity: 0.5,
+    },
+    findOnMapBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.accent,
+      borderRadius: borderRadius.xl,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      marginBottom: spacing.md,
+      ...shadows.sm,
+    },
+    findOnMapBtnDisabled: {
+      opacity: 0.65,
+    },
+    findOnMapBtnText: {
+      color: colors.white,
+      fontSize: fontSize.sm,
+      fontWeight: fontWeight.bold,
     },
     pickerIconWrap: {
       width: 44,
@@ -877,6 +898,48 @@ export default function OrganizerEventCreateScreen() {
         value={locationAddress}
         onChangeText={setLocationAddress}
       />
+
+      <TouchableOpacity
+        style={[styles.findOnMapBtn, geocoding && styles.findOnMapBtnDisabled]}
+        disabled={geocoding}
+        activeOpacity={0.9}
+        onPress={async () => {
+          const q = `${locationName || ''} ${locationAddress || ''}`.trim();
+          if (!q) {
+            Alert.alert('Адрес', 'Введите название места или адрес, чтобы найти на карте.');
+            return;
+          }
+          setGeocoding(true);
+          try {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+            const res = await fetch(url, {
+              headers: {
+                Accept: 'application/json',
+                'Accept-Language': 'ru',
+              },
+            });
+            const json = (await res.json()) as any[];
+            const item = Array.isArray(json) ? json[0] : null;
+            const lat = item?.lat ? Number(item.lat) : NaN;
+            const lon = item?.lon ? Number(item.lon) : NaN;
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+              Alert.alert('Не найдено', 'Не удалось найти этот адрес. Попробуйте уточнить.');
+              return;
+            }
+
+            setLocationLat(lat);
+            setLocationLng(lon);
+            router.push(`/map?mode=pick&centerLat=${lat}&centerLng=${lon}`);
+          } catch (e) {
+            Alert.alert('Ошибка', e instanceof Error ? e.message : 'Не удалось найти адрес');
+          } finally {
+            setGeocoding(false);
+          }
+        }}
+      >
+        <Ionicons name="search" size={18} color={colors.white} />
+        <Text style={styles.findOnMapBtnText}>{geocoding ? 'Поиск…' : 'Найти на карте по адресу'}</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.pickerField}

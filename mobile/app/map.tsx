@@ -10,7 +10,7 @@ import Constants from 'expo-constants';
 
 export default function MapScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ mode?: string }>();
+  const params = useLocalSearchParams<{ mode?: string; centerLat?: string; centerLng?: string }>();
   const mode = params.mode === 'pick' ? 'pick' : 'browse';
 
   const { colors, spacing, fontSize, fontWeight, borderRadius, shadows } = useTheme();
@@ -122,7 +122,15 @@ export default function MapScreen() {
   const YaMap = mapModule.default;
   const Marker = (mapModule as any).Marker;
   const initial = eventsWithCoords[0]?.location.coordinates || { latitude: 55.751244, longitude: 37.618423 };
-  const initialPick = pickCenter || pickedLocation || initial;
+
+  const paramCenterLat = typeof params.centerLat === 'string' ? Number(params.centerLat) : NaN;
+  const paramCenterLng = typeof params.centerLng === 'string' ? Number(params.centerLng) : NaN;
+  const paramCenter =
+    Number.isFinite(paramCenterLat) && Number.isFinite(paramCenterLng)
+      ? { latitude: paramCenterLat, longitude: paramCenterLng }
+      : null;
+
+  const initialPick = pickCenter || pickedLocation || paramCenter || initial;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
