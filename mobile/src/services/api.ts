@@ -369,7 +369,19 @@ class ApiService {
         data = null;
       }
 
-      const message = typeof data === 'string' && data ? data : `API Error: ${response.status}`;
+      const formatJsonError = (payload: any): string | null => {
+        if (!payload || typeof payload !== 'object') return null;
+        const err = typeof payload.error === 'string' ? payload.error : null;
+        const msg = typeof payload.message === 'string' ? payload.message : null;
+        const required = typeof payload.requiredFeature === 'string' ? payload.requiredFeature : null;
+        const parts = [err, msg, required ? `requiredFeature=${required}` : null].filter(Boolean);
+        return parts.length ? parts.join(' — ') : null;
+      };
+
+      const message =
+        typeof data === 'string' && data.trim()
+          ? data.trim()
+          : formatJsonError(data as any) || `API Error: ${response.status}`;
       throw new ApiError(response.status, message, data);
     }
 

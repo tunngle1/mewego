@@ -23,38 +23,52 @@ export default function MapScreen() {
   const [category, setCategory] = useState<string | null>(null);
   const [intensity, setIntensity] = useState<string | null>(null);
   const [pickCenter, setPickCenter] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [pickAddress, setPickAddress] = useState<string>('');
+  const [mapReady, setMapReady] = useState(false);
 
-  const mapModule = useMemo(() => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      return require('react-native-yamap-plus');
-    } catch {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        return require('react-native-yamap');
-      } catch {
-        return null;
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!mapModule) return;
-    const init = (mapModule as any).init;
-    if (typeof init !== 'function') return;
-
-    const key =
+  const yandexKey = useMemo(() => {
+    const k =
       (Constants.expoConfig?.extra as any)?.yandexMapKitApiKey ||
       (Constants.manifest2 as any)?.extra?.expoClient?.extra?.yandexMapKitApiKey ||
       '';
+    return typeof k === 'string' ? k.trim() : '';
+  }, []);
 
-    if (typeof key === 'string' && key.trim().length > 0) {
+  const mapModule = useMemo(() => {
+    // Without API key we must not mount YaMap at all (Android may crash).
+    if (!yandexKey) return null;
+
+    let m: any = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      m = require('react-native-yamap-plus');
+    } catch {
       try {
-        init(key.trim());
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        m = require('react-native-yamap');
       } catch {
-        // ignore
+        m = null;
       }
     }
+
+    // Best-effort init synchronously (before first YaMap mount)
+    try {
+      const init = m?.init;
+      if (typeof init === 'function') init(yandexKey);
+    } catch {
+      // ignore
+    }
+
+    return m;
+  }, [yandexKey]);
+
+  useEffect(() => {
+    if (!mapModule) {
+      setMapReady(false);
+      return;
+    }
+
+    setMapReady(true);
   }, [mapModule]);
 
   useEffect(() => {
@@ -98,6 +112,27 @@ export default function MapScreen() {
     </TouchableOpacity>
   );
 
+  if (!yandexKey) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.8}>
+            <Text style={styles.backText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Карта событий</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <View style={styles.center}>
+          <Text style={styles.errorTitle}>Карта недоступна</Text>
+          <Text style={styles.errorText}>
+            Не задан ключ Yandex MapKit для текущей сборки.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (!mapModule?.default || !(mapModule as any).Marker) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -119,6 +154,25 @@ export default function MapScreen() {
     );
   }
 
+  if (!mapReady) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.8}>
+            <Text style={styles.backText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>{mode === 'pick' ? 'Выбор точки' : 'Карта событий'}</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <View style={styles.center}>
+          <Text style={styles.errorTitle}>Загрузка карты…</Text>
+          <Text style={styles.errorText}>Инициализируем Yandex MapKit</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const YaMap = mapModule.default;
   const Marker = (mapModule as any).Marker;
   const initial = eventsWithCoords[0]?.location.coordinates || { latitude: 55.751244, longitude: 37.618423 };
@@ -131,6 +185,54 @@ export default function MapScreen() {
       : null;
 
   const initialPick = pickCenter || pickedLocation || paramCenter || initial;
+
+  const reverseGeocode = async (latitude: number, longitude: number) => {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1&lat=${encodeURIComponent(
+        String(latitude)
+      )}&lon=${encodeURIComponent(String(longitude))}`;
+      const res = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+          'Accept-Language': 'ru',
+        },
+      });
+      const json = (await res.json()) as any;
+      const name = typeof json?.display_name === 'string' ? json.display_name : '';
+      return name;
+    } catch {
+      return '';
+    }
+  };
+
+  const extractLatLonFromMapPress = (e: any): { lat: number; lon: number } | null => {
+    const ne = e?.nativeEvent ?? e;
+
+    const candidates = [
+      ne,
+      ne?.point,
+      ne?.position,
+      ne?.coords,
+      ne?.coordinate,
+      ne?.location,
+    ];
+
+    for (const c of candidates) {
+      if (!c || typeof c !== 'object') continue;
+
+      const latRaw = (c as any).lat ?? (c as any).latitude;
+      const lonRaw = (c as any).lon ?? (c as any).longitude;
+
+      const lat = typeof latRaw === 'number' ? latRaw : latRaw != null ? Number(latRaw) : NaN;
+      const lon = typeof lonRaw === 'number' ? lonRaw : lonRaw != null ? Number(lonRaw) : NaN;
+
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        return { lat, lon };
+      }
+    }
+
+    return null;
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -162,9 +264,12 @@ export default function MapScreen() {
         <YaMap
           style={styles.map}
           showZoomControls={false}
-          rotateEnabled={false}
-          zoomEnabled
-          scrollEnabled
+          interactiveDisabled={false}
+          rotateGesturesDisabled={false}
+          zoomGesturesDisabled={false}
+          scrollGesturesDisabled={false}
+          tiltGesturesDisabled={false}
+          fastTapDisabled={false}
           nightMode={false}
           initialRegion={{
             lat: initialPick.latitude,
@@ -173,16 +278,23 @@ export default function MapScreen() {
             azimuth: 0,
             tilt: 0,
           }}
-          // Not typed in our d.ts, but supported by YaMap libs.
-          // Keep via `any` to capture center while user pans (for pick mode).
           {...(mode === 'pick'
             ? ({
-                onCameraPositionChange: (region: any) => {
-                  const lat = Number(region?.lat);
-                  const lon = Number(region?.lon);
-                  if (Number.isFinite(lat) && Number.isFinite(lon)) {
-                    setPickCenter({ latitude: lat, longitude: lon });
-                  }
+                onMapPress: async (e: any) => {
+                  const p = extractLatLonFromMapPress(e);
+                  if (!p) return;
+                  setPickCenter({ latitude: p.lat, longitude: p.lon });
+                  setPickAddress('');
+                  const addr = await reverseGeocode(p.lat, p.lon);
+                  if (addr) setPickAddress(addr);
+                },
+                onMapLongPress: async (e: any) => {
+                  const p = extractLatLonFromMapPress(e);
+                  if (!p) return;
+                  setPickCenter({ latitude: p.lat, longitude: p.lon });
+                  setPickAddress('');
+                  const addr = await reverseGeocode(p.lat, p.lon);
+                  if (addr) setPickAddress(addr);
                 },
               } as any)
             : {})}
@@ -216,7 +328,7 @@ export default function MapScreen() {
           <View style={styles.card}>
             <Text style={styles.hintTitle}>Выбор точки</Text>
             <Text style={styles.hintText}>
-              Передвигайте карту — точка берётся из центра. Нажмите “Выбрать”, чтобы сохранить координаты.
+              Тапните по карте, чтобы поставить маркер. Нажмите “Выбрать”, чтобы сохранить координаты.
             </Text>
 
             <View style={[styles.cardActions, { marginTop: 12 }]}>
@@ -224,7 +336,12 @@ export default function MapScreen() {
                 style={[styles.actionBtn, styles.actionPrimary]}
                 onPress={() => {
                   const c = pickCenter || pickedLocation || initialPick;
-                  setPickedLocation({ latitude: c.latitude, longitude: c.longitude });
+                  const effectiveAddress = pickAddress || (pickedLocation as any)?.address || '';
+                  setPickedLocation({
+                    latitude: c.latitude,
+                    longitude: c.longitude,
+                    ...(effectiveAddress ? { address: effectiveAddress } : {}),
+                  });
                   router.back();
                 }}
                 activeOpacity={0.9}
@@ -245,9 +362,11 @@ export default function MapScreen() {
             </View>
 
             <Text style={styles.meta}>
-              {(pickCenter || pickedLocation)
-                ? `${(pickCenter || pickedLocation)!.latitude.toFixed(6)}, ${(pickCenter || pickedLocation)!.longitude.toFixed(6)}`
-                : 'Двигайте карту…'}
+              {pickAddress
+                ? pickAddress
+                : (pickCenter || pickedLocation)
+                  ? `${(pickCenter || pickedLocation)!.latitude.toFixed(6)}, ${(pickCenter || pickedLocation)!.longitude.toFixed(6)}`
+                  : 'Тапните по карте…'}
             </Text>
           </View>
         </View>

@@ -13,10 +13,15 @@ declare module 'react-native-yamap' {
   export interface YaMapProps extends ViewProps {
     initialRegion?: Region;
     showZoomControls?: boolean;
-    rotateEnabled?: boolean;
-    zoomEnabled?: boolean;
-    scrollEnabled?: boolean;
+    interactiveDisabled?: boolean;
+    rotateGesturesDisabled?: boolean;
+    zoomGesturesDisabled?: boolean;
+    scrollGesturesDisabled?: boolean;
+    tiltGesturesDisabled?: boolean;
+    fastTapDisabled?: boolean;
     nightMode?: boolean;
+    onMapPress?: (e: any) => void;
+    onMapLongPress?: (e: any) => void;
     children?: React.ReactNode;
   }
 
@@ -43,10 +48,15 @@ declare module 'react-native-yamap-plus' {
   export interface YaMapProps extends ViewProps {
     initialRegion?: Region;
     showZoomControls?: boolean;
-    rotateEnabled?: boolean;
-    zoomEnabled?: boolean;
-    scrollEnabled?: boolean;
+    interactiveDisabled?: boolean;
+    rotateGesturesDisabled?: boolean;
+    zoomGesturesDisabled?: boolean;
+    scrollGesturesDisabled?: boolean;
+    tiltGesturesDisabled?: boolean;
+    fastTapDisabled?: boolean;
     nightMode?: boolean;
+    onMapPress?: (e: any) => void;
+    onMapLongPress?: (e: any) => void;
     children?: React.ReactNode;
   }
 

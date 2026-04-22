@@ -83,9 +83,12 @@ export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
         <YaMap
           style={styles.map}
           showZoomControls={false}
-          rotateEnabled={false}
-          zoomEnabled
-          scrollEnabled
+          interactiveDisabled={false}
+          rotateGesturesDisabled={false}
+          zoomGesturesDisabled={false}
+          scrollGesturesDisabled={false}
+          tiltGesturesDisabled={false}
+          fastTapDisabled={false}
           nightMode={false}
           initialRegion={{
             lat: latitude,

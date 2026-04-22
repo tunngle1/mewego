@@ -24,6 +24,10 @@ export default function AuthEntryScreen() {
     router.push({ pathname: `/auth/${method}`, params: { role } });
   };
 
+  const handleTestLogin = () => {
+    router.push('/test-login');
+  };
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -137,6 +141,18 @@ export default function AuthEntryScreen() {
       textAlign: 'center',
       textDecorationLine: 'underline',
     },
+    testLoginButton: {
+      marginTop: spacing.lg,
+      paddingVertical: spacing.sm,
+      alignItems: 'center',
+    },
+    testLoginButtonText: {
+      fontSize: fontSize.sm,
+      fontWeight: fontWeight.bold,
+      color: colors.text,
+      textAlign: 'center',
+      textDecorationLine: 'underline',
+    },
   });
 
   return (
@@ -224,6 +240,10 @@ export default function AuthEntryScreen() {
 
         <TouchableOpacity style={styles.resetButton} onPress={handleResetRegistration}>
           <Text style={styles.resetButtonText}>Сбросить регистрацию (dev)</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.testLoginButton} onPress={handleTestLogin}>
+          <Text style={styles.testLoginButtonText}>Тестовый вход (без регистрации)</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

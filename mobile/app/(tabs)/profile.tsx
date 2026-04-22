@@ -64,12 +64,8 @@ export default function ProfileScreen() {
   }, [refreshGamification, refreshSubscriptionStatus, syncMe]);
 
   const MENU_ITEMS = [
-    ...(canOpenAdmin
-      ? [
-          { title: 'Админ-панель', icon: '🛡️', detail: '', route: '/(admin)/dashboard' },
-          { title: 'Тестовый вход', icon: '🧪', detail: '', route: '/test-login' },
-        ]
-      : []),
+    ...(canOpenAdmin ? [{ title: 'Админ-панель', icon: '🛡️', detail: '', route: '/(admin)/dashboard' }] : []),
+    { title: 'Тестовый вход', icon: '🧪', detail: '', route: '/test-login' },
     { title: 'Карта', icon: '🗺️', detail: '', route: '/map' },
     { title: 'Мои уведомления', icon: '🔔', detail: 'Включены', route: '/notifications' },
     { title: 'Подписка', icon: '💳', detail: 'PRO', route: '/profile/subscription' },
