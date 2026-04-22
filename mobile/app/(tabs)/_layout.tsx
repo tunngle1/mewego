@@ -75,7 +75,8 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   const router = useRouter();
   const user = useAppStore((s) => s.user);
 
-  const isOrganizer = user?.role === 'organizer' || user?.role === 'admin' || user?.role === 'superadmin';
+  const isOrganizer =
+    user?.role === 'organizer' || user?.role === 'admin' || user?.role === 'superadmin';
 
   const TAB_CONFIG: Record<string, { icon: IconName; iconFocused: IconName; label: string }> = {
     explore: { icon: 'star-outline', iconFocused: 'star', label: 'События' },

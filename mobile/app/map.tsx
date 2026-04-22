@@ -206,32 +206,42 @@ export default function MapScreen() {
   };
 
   const extractLatLonFromMapPress = (e: any): { lat: number; lon: number } | null => {
-    const ne = e?.nativeEvent ?? e;
-
-    const candidates = [
-      ne,
-      ne?.point,
-      ne?.position,
-      ne?.coords,
-      ne?.coordinate,
-      ne?.location,
-    ];
-
-    for (const c of candidates) {
-      if (!c || typeof c !== 'object') continue;
-
-      const latRaw = (c as any).lat ?? (c as any).latitude;
-      const lonRaw = (c as any).lon ?? (c as any).longitude;
-
+    const tryPoint = (c: any): { lat: number; lon: number } | null => {
+      if (!c || typeof c !== 'object') return null;
+      const latRaw = c.lat ?? c.latitude;
+      const lonRaw = c.lon ?? c.longitude;
       const lat = typeof latRaw === 'number' ? latRaw : latRaw != null ? Number(latRaw) : NaN;
       const lon = typeof lonRaw === 'number' ? lonRaw : lonRaw != null ? Number(lonRaw) : NaN;
-
       if (Number.isFinite(lat) && Number.isFinite(lon)) {
         return { lat, lon };
       }
+      return null;
+    };
+
+    const roots = [e, e?.nativeEvent, e?.nativeEvent?.source];
+    for (const r of roots) {
+      const direct = tryPoint(r);
+      if (direct) return direct;
     }
 
-    return null;
+    const ne = e?.nativeEvent ?? e;
+    const flat = [ne, ne?.point, ne?.position, ne?.coords, ne?.coordinate, ne?.location];
+    for (const c of flat) {
+      const p = tryPoint(c);
+      if (p) return p;
+    }
+
+    const walk = (o: any, depth: number): { lat: number; lon: number } | null => {
+      if (!o || typeof o !== 'object' || depth > 3) return null;
+      const p = tryPoint(o);
+      if (p) return p;
+      for (const k of Object.keys(o)) {
+        const nested = walk((o as any)[k], depth + 1);
+        if (nested) return nested;
+      }
+      return null;
+    };
+    return walk(e, 0);
   };
 
   return (
@@ -260,7 +270,7 @@ export default function MapScreen() {
         </View>
       ) : null}
 
-      <View style={styles.mapWrap}>
+      <View style={styles.mapWrap} collapsable={false}>
         <YaMap
           style={styles.map}
           showZoomControls={false}

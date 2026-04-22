@@ -101,7 +101,7 @@ const syncCrmParticipantStatusForEvent = async (params: {
 };
 
 // GET /api/v1/organizer/events - список событий организатора
-router.get('/events', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.get('/events', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const organizerId = req.auth!.userId;
 
@@ -207,7 +207,7 @@ router.get('/events', requireAuth, requireRole('organizer', 'superadmin'), async
 });
 
 // GET /api/v1/organizer/events/:id - детали события организатора
-router.get('/events/:id', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.get('/events/:id', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const organizerId = req.auth!.userId;
@@ -262,7 +262,7 @@ router.get('/events/:id', requireAuth, requireRole('organizer', 'superadmin'), a
 });
 
 // POST /api/v1/organizer/events - создать событие (статус pending)
-router.post('/events', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.post('/events', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const organizerId = req.auth!.userId;
     await ensureUserExists(organizerId, req.auth!.role);
@@ -381,7 +381,7 @@ router.post('/events', requireAuth, requireRole('organizer', 'superadmin'), asyn
 });
 
 // PATCH /api/v1/organizer/events/:id - редактировать событие
-router.patch('/events/:id', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.patch('/events/:id', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const organizerId = req.auth!.userId;
@@ -677,7 +677,7 @@ router.patch('/events/:id', requireAuth, requireRole('organizer', 'superadmin'),
 });
 
 // POST /api/v1/organizer/events/:id/cancel - отменить событие
-router.post('/events/:id/cancel', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.post('/events/:id/cancel', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const organizerId = req.auth!.userId;
@@ -710,7 +710,7 @@ router.post('/events/:id/cancel', requireAuth, requireRole('organizer', 'superad
 });
 
 // GET /api/v1/organizer/events/:id/participants - список участников
-router.get('/events/:id/participants', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.get('/events/:id/participants', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const organizerId = req.auth!.userId;
@@ -776,7 +776,7 @@ router.get('/events/:id/participants', requireAuth, requireRole('organizer', 'su
 });
 
 // GET /api/v1/organizer/events/:id/check-in - QR+код для отметки участников
-router.get('/events/:id/check-in', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.get('/events/:id/check-in', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const organizerId = req.auth!.userId;
@@ -866,7 +866,7 @@ router.get('/events/:id/check-in', requireAuth, requireRole('organizer', 'supera
 });
 
 // PATCH /api/v1/organizer/events/:eventId/participants/:participantId - обновить статус участника
-router.patch('/events/:eventId/participants/:participantId', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.patch('/events/:eventId/participants/:participantId', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const { eventId, participantId } = req.params;
     const organizerId = req.auth!.userId;
@@ -921,7 +921,7 @@ router.patch('/events/:eventId/participants/:participantId', requireAuth, requir
 });
 
 // GET /api/v1/organizer/stats - статистика организатора
-router.get('/stats', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.get('/stats', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const organizerId = req.auth!.userId;
 
@@ -991,7 +991,7 @@ router.get('/stats', requireAuth, requireRole('organizer', 'superadmin'), async 
 });
 
 // GET /api/v1/organizer/reviews - отзывы на события организатора
-router.get('/reviews', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.get('/reviews', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const organizerId = req.auth!.userId;
 
@@ -1026,7 +1026,7 @@ router.get('/reviews', requireAuth, requireRole('organizer', 'superadmin'), asyn
 });
 
 // GET /api/v1/organizer/certificates - сертификаты организатора
-router.get('/certificates', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.get('/certificates', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const organizerId = req.auth!.userId;
 
@@ -1051,7 +1051,7 @@ router.get('/certificates', requireAuth, requireRole('organizer', 'superadmin'),
 });
 
 // POST /api/v1/organizer/certificates - добавить сертификат
-router.post('/certificates', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.post('/certificates', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const organizerId = req.auth!.userId;
     const { title, issuer, issuedAt, assetUrl } = req.body;
@@ -1093,7 +1093,7 @@ router.post('/certificates', requireAuth, requireRole('organizer', 'superadmin')
 });
 
 // DELETE /api/v1/organizer/certificates/:id - удалить сертификат
-router.delete('/certificates/:id', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.delete('/certificates/:id', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const organizerId = req.auth!.userId;
     const { id } = req.params;
@@ -1116,7 +1116,7 @@ router.delete('/certificates/:id', requireAuth, requireRole('organizer', 'supera
 });
 
 // GET /api/v1/organizer/profile - профиль организатора (для редактирования)
-router.get('/profile', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.get('/profile', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const organizerId = req.auth!.userId;
 
@@ -1165,7 +1165,7 @@ router.get('/profile', requireAuth, requireRole('organizer', 'superadmin'), asyn
 });
 
 // PATCH /api/v1/organizer/profile - обновить профиль организатора
-router.patch('/profile', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.patch('/profile', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const organizerId = req.auth!.userId;
     const { displayName, avatarUrl, bio, tags, city, contactPhone, contactTelegram, contactEmail, paymentInfo } = req.body;
@@ -1367,7 +1367,7 @@ router.get('/:id/reviews', async (req: Request, res: Response) => {
 });
 
 // POST /api/v1/organizer/events/:id/finish - завершить событие
-router.post('/events/:id/finish', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+router.post('/events/:id/finish', requireAuth, requireRole('organizer', 'admin', 'superadmin'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const organizerId = req.auth!.userId;

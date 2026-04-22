@@ -156,7 +156,10 @@ export const requireRole = (...roles: string[]) => {
     }
 
     if (!roles.includes(req.auth.role)) {
-      return res.status(403).json({ error: 'Forbidden' });
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: `Недостаточно прав. Нужна роль: ${roles.join(' или ')}. Сейчас: ${req.auth.role}.`,
+      });
     }
     next();
   };

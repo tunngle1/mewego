@@ -31,7 +31,8 @@ export default function ProfileScreen() {
   const [pushLoading, setPushLoading] = useState(false);
   const [themePickerOpen, setThemePickerOpen] = useState(false);
 
-  const isOrganizer = user?.role === 'organizer' || user?.role === 'superadmin';
+  const isOrganizer =
+    user?.role === 'organizer' || user?.role === 'admin' || user?.role === 'superadmin';
   const canOpenAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   useEffect(() => {

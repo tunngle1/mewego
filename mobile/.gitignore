@@ -42,3 +42,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# local Gradle/JVM overrides (ASCII paths for Windows builds)
+.gradle-home/
+jbuildhome/
+tmp/
