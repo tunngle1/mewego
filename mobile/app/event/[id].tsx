@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -54,6 +55,28 @@ export default function EventDetailScreen() {
     () => createStyles(colors, spacing, fontSize, fontWeight, borderRadius, shadows),
     [colors, spacing, fontSize, fontWeight, borderRadius, shadows]
   );
+
+  const openInYandexMaps = async () => {
+    const lat = event?.location?.coordinates?.latitude;
+    const lng = event?.location?.coordinates?.longitude;
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+      Alert.alert('Нет координат', 'Для этого события не заданы координаты точки встречи.');
+      return;
+    }
+    const url = `https://yandex.com/maps/?pt=${lng},${lat}&z=16&l=map`;
+    await Linking.openURL(url);
+  };
+
+  const buildRouteInYandexMaps = async () => {
+    const lat = event?.location?.coordinates?.latitude;
+    const lng = event?.location?.coordinates?.longitude;
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+      Alert.alert('Нет координат', 'Для этого события не заданы координаты точки встречи.');
+      return;
+    }
+    const url = `https://yandex.com/maps/?rtext=~${lng},${lat}&rtt=auto`;
+    await Linking.openURL(url);
+  };
   const { 
     events, 
     selectedEvent, 
@@ -294,6 +317,25 @@ export default function EventDetailScreen() {
                 ) : null}
               </View>
             </View>
+
+            {event.location?.coordinates ? (
+              <View style={styles.locationActions}>
+                <TouchableOpacity
+                  style={[styles.locBtn, styles.locBtnPrimary]}
+                  onPress={buildRouteInYandexMaps}
+                  activeOpacity={0.9}
+                >
+                  <Text style={styles.locBtnPrimaryText}>Маршрут</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.locBtn, styles.locBtnSecondary]}
+                  onPress={openInYandexMaps}
+                  activeOpacity={0.9}
+                >
+                  <Text style={styles.locBtnSecondaryText}>Открыть в Яндекс.Картах</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
 
             <View style={styles.infoRow}>
               <View style={styles.infoIcon}>

@@ -75,6 +75,9 @@ interface AppStore {
   adminEventEditRequestDetails: Record<string, AdminEventEditRequestDetail>;
   adminLoading: boolean;
   adminError: string | null;
+
+  // Map pick (temp, non-persisted)
+  pickedLocation: { latitude: number; longitude: number } | null;
   
   // Actions - Auth
   setFirstLaunch: (value: boolean) => void;
@@ -86,6 +89,9 @@ interface AppStore {
   setGender: (gender: Gender) => void;
   setBirthDate: (birthDate: string) => void;
   resetRegistration: () => void;
+
+  // Actions - Map pick
+  setPickedLocation: (loc: { latitude: number; longitude: number } | null) => void;
   
   // Actions - Theme
   setThemeVariant: (variant: ThemeVariant) => void;
@@ -251,6 +257,8 @@ export const useAppStore = create<AppStore>()(
       adminEventEditRequestDetails: {},
       adminLoading: false,
       adminError: null,
+
+      pickedLocation: null,
       
       // Auth actions
       setFirstLaunch: (value) => set({ isFirstLaunch: value }),
@@ -415,6 +423,8 @@ export const useAppStore = create<AppStore>()(
         birthDate: null,
         themeVariant: 'feminine' as ThemeVariant,
       }),
+
+      setPickedLocation: (loc) => set({ pickedLocation: loc }),
       
       // Theme actions
       setThemeVariant: (variant) => set({ themeVariant: variant }),

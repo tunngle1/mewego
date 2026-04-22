@@ -94,6 +94,8 @@ export default function OrganizerEventCreateScreen() {
     createOrganizerEventAsync,
     updateOrganizerEventAsync,
     fetchOrganizerEvents,
+    pickedLocation,
+    setPickedLocation,
   } = useAppStore();
 
   const existingEvent = editId ? organizerEvents.find((e) => e.id === editId) : undefined;
@@ -180,6 +182,14 @@ export default function OrganizerEventCreateScreen() {
     setCustomInviteCode(existingEvent.inviteCode ? String(existingEvent.inviteCode) : '');
     setDidPrefill(true);
   }, [editId, existingEvent, fetchOrganizerEventById, didPrefill]);
+
+  React.useEffect(() => {
+    if (!pickedLocation) return;
+    setLocationLat(pickedLocation.latitude);
+    setLocationLng(pickedLocation.longitude);
+    // one-shot: clear after consuming
+    setPickedLocation(null);
+  }, [pickedLocation, setPickedLocation]);
 
   if (editId && !existingEvent && !didPrefill) {
     return (
@@ -869,9 +879,8 @@ export default function OrganizerEventCreateScreen() {
       />
 
       <TouchableOpacity
-        style={[styles.pickerField, styles.pickerFieldDisabled]}
-        onPress={() => {}}
-        disabled
+        style={styles.pickerField}
+        onPress={() => router.push('/map?mode=pick')}
         activeOpacity={0.85}
       >
         <View style={styles.pickerIconWrap}>
@@ -888,7 +897,7 @@ export default function OrganizerEventCreateScreen() {
           >
             {typeof locationLat === 'number' && typeof locationLng === 'number'
               ? `${locationLat.toFixed(6)}, ${locationLng.toFixed(6)}`
-              : 'Карта отключена'}
+              : 'Выбрать на карте'}
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
