@@ -9,6 +9,9 @@
       "distribution": "internal"
     },
     "apk": {
+      "env": {
+        "YANDEX_MAPKIT_API_KEY": "8de82d55-7782-43fa-a703-d1fde5a20baf"
+      },
       "distribution": "internal",
       "android": {
         "buildType": "apk"
