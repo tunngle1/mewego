@@ -1,0 +1,23 @@
+# EAS build upload ignore list (repo root)
+#
+# This repo is a monorepo; EAS archives from the VCS root by default.
+# Keep the archive small by uploading only the mobile app folder.
+
+# Ignore everything by default
+*
+
+# Include only mobile app
+!mobile/
+!mobile/**
+
+# Extra safety: exclude heavy local folders inside mobile
+mobile/node_modules/
+mobile/android/
+mobile/ios/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/*.log
+mobile/.env
+mobile/.env.*
+
