@@ -87,6 +87,7 @@ class ApiService {
   private token: string | null = null;
   private userId: string | null = null;
   private userRole: 'user' | 'organizer' | 'admin' | 'superadmin' = 'user';
+  private testAuthKey: string | null = null;
 
   private isRetryableNetworkError(err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
@@ -282,6 +283,12 @@ class ApiService {
     this.userRole = role;
   }
 
+  // For production-safe test sessions (server validates x-test-auth)
+  setTestAuthKey(key: string | null) {
+    const v = typeof key === 'string' ? key.trim() : '';
+    this.testAuthKey = v ? v : null;
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -291,6 +298,7 @@ class ApiService {
       ...(this.token && { Authorization: `Bearer ${this.token}` }),
       // Временные headers для dev-авторизации (backend принимает x-user-id, x-user-role)
       ...(this.userId && { 'x-user-id': this.userId, 'x-user-role': this.userRole }),
+      ...(this.testAuthKey && { 'x-test-auth': this.testAuthKey }),
       ...options.headers,
     };
 

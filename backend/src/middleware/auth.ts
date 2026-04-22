@@ -12,6 +12,8 @@ const prisma = new PrismaClient();
 const ALLOW_DEV_HEADERS = process.env.ALLOW_DEV_HEADERS === 'true' && process.env.NODE_ENV !== 'production';
 const ALLOW_DEV_ROLE_OVERRIDE = process.env.ALLOW_DEV_ROLE_OVERRIDE === 'true' && ALLOW_DEV_HEADERS;
 const ALLOW_DEV_SUPERADMIN_BOOTSTRAP = process.env.ALLOW_DEV_SUPERADMIN_BOOTSTRAP === 'true' && ALLOW_DEV_HEADERS;
+const TEST_AUTH_KEY = typeof process.env.TEST_AUTH_KEY === 'string' ? process.env.TEST_AUTH_KEY : '';
+const ALLOW_TEST_HEADERS = Boolean(TEST_AUTH_KEY && TEST_AUTH_KEY.trim());
 
 const AUTH_JWT_SECRET = process.env.AUTH_JWT_SECRET || '';
 
@@ -47,6 +49,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 
   const userId = (jwtUserId || (req.headers['x-user-id'] as string)) as string;
   const role = req.headers['x-user-role'] as string;
+  const testAuth = req.headers['x-test-auth'] as string;
 
   if (!userId) {
     req.auth = {
@@ -57,6 +60,15 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   }
 
   const headerRole = (role as AuthContext['role']) || 'user';
+  const isTestUserId = typeof userId === 'string' && userId.startsWith('test_');
+  const canUseTestHeaders =
+    // Never allow header-based overrides when request is JWT-authenticated.
+    !jwtUserId &&
+    ALLOW_TEST_HEADERS &&
+    isTestUserId &&
+    typeof testAuth === 'string' &&
+    testAuth.trim().length > 0 &&
+    testAuth.trim() === TEST_AUTH_KEY.trim();
 
   prisma.user
     .findUnique({ where: { id: userId }, select: { role: true } })
@@ -89,8 +101,27 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
           });
       }
 
+      // Production-safe test auth: allow `test_*` users to carry a role via headers
+      // only if the shared secret matches.
+      if (canUseTestHeaders && headerRole && dbRole !== headerRole) {
+        return prisma.user
+          .upsert({
+            where: { id: userId },
+            update: { role: headerRole, lastActiveAt: new Date() },
+            create: { id: userId, role: headerRole, name: 'Test User' },
+          })
+          .then(() => {
+            req.auth = { userId, role: headerRole };
+            next();
+          });
+      }
+
       // If request is authenticated via JWT, ignore header role overrides.
-      const resolvedRole = jwtUserId ? (dbRole || 'user') : ALLOW_DEV_ROLE_OVERRIDE ? (dbRole || headerRole) : (dbRole || 'user');
+      const resolvedRole = jwtUserId
+        ? (dbRole || 'user')
+        : ALLOW_DEV_ROLE_OVERRIDE
+          ? (dbRole || headerRole)
+          : (dbRole || 'user');
       req.auth = {
         userId,
         role: resolvedRole,

@@ -77,7 +77,7 @@ interface AppStore {
   adminError: string | null;
 
   // Map pick (temp, non-persisted)
-  pickedLocation: { latitude: number; longitude: number } | null;
+  pickedLocation: { latitude: number; longitude: number; address?: string } | null;
   
   // Actions - Auth
   setFirstLaunch: (value: boolean) => void;
@@ -91,7 +91,7 @@ interface AppStore {
   resetRegistration: () => void;
 
   // Actions - Map pick
-  setPickedLocation: (loc: { latitude: number; longitude: number } | null) => void;
+  setPickedLocation: (loc: { latitude: number; longitude: number; address?: string } | null) => void;
   
   // Actions - Theme
   setThemeVariant: (variant: ThemeVariant) => void;
@@ -365,6 +365,7 @@ export const useAppStore = create<AppStore>()(
       login: (user) => {
         // Устанавливаем auth context для backend запросов
         api.setAuthContext(user.id, (user.role as 'user' | 'organizer' | 'admin' | 'superadmin') || 'user');
+        api.setTestAuthKey(null);
         set({ 
           isAuthenticated: true, 
           isTestSession: false,
@@ -385,6 +386,7 @@ export const useAppStore = create<AppStore>()(
 
         // For test sessions we intentionally do not rely on backend auth.
         api.setAuthContext(testUser.id, role);
+        api.setTestAuthKey(process.env.EXPO_PUBLIC_TEST_AUTH_KEY || null);
         set({
           isAuthenticated: true,
           isTestSession: true,
@@ -395,6 +397,7 @@ export const useAppStore = create<AppStore>()(
       logout: () => {
         // Очищаем auth context
         api.setAuthContext('anonymous', 'user');
+        api.setTestAuthKey(null);
         set({ 
           isAuthenticated: false, 
           isTestSession: false,
@@ -1673,8 +1676,20 @@ export const useAppStore = create<AppStore>()(
         try {
           const user = state?.user;
           const isAuthenticated = state?.isAuthenticated;
+          const isLikelyTestUser =
+            Boolean(user && typeof (user as any).id === 'string' && String((user as any).id).startsWith('test_')) ||
+            Boolean(user && typeof (user as any).email === 'string' && String((user as any).email).endsWith('.local'));
+
           if (user && isAuthenticated) {
             api.setAuthContext(user.id, (user.role as 'user' | 'organizer' | 'admin' | 'superadmin') || 'user');
+
+            // If the app crashed and restarted, keep test sessions in "no-backend" mode.
+            if (isLikelyTestUser) {
+              useAppStore.setState({ isTestSession: true });
+              api.setTestAuthKey(process.env.EXPO_PUBLIC_TEST_AUTH_KEY || null);
+              return;
+            }
+            api.setTestAuthKey(null);
             
             // Подгружаем актуальный статус подписки из backend при старте приложения
             api.getSubscriptionStatus().then((sub) => {
@@ -1717,15 +1732,18 @@ export const useAppStore = create<AppStore>()(
             });
           } else {
             api.setAuthContext('anonymous', 'user');
+            api.setTestAuthKey(null);
           }
         } catch (e) {
           api.setAuthContext('anonymous', 'user');
+          api.setTestAuthKey(null);
         }
       },
       partialize: (state) => ({
         isFirstLaunch: state.isFirstLaunch,
         onboardingCompleted: state.onboardingCompleted,
         isAuthenticated: state.isAuthenticated,
+        isTestSession: state.isTestSession,
         user: state.user,
         gender: state.gender,
         birthDate: state.birthDate,

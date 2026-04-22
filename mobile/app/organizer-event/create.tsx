@@ -20,6 +20,7 @@ import { useTheme } from '../../src/contexts/ThemeContext';
 import { useAppStore } from '../../src/store/useAppStore';
 import { OrganizerPriceType, OrganizerLocationType, EventVisibility } from '../../src/types';
 import { isDarkTheme } from '../../src/constants/themes';
+import { ApiError } from '../../src/services/api';
 
 const TOTAL_STEPS = 7;
 
@@ -188,9 +189,12 @@ export default function OrganizerEventCreateScreen() {
     if (!pickedLocation) return;
     setLocationLat(pickedLocation.latitude);
     setLocationLng(pickedLocation.longitude);
+    if (pickedLocation.address && !locationAddress.trim()) {
+      setLocationAddress(pickedLocation.address);
+    }
     // one-shot: clear after consuming
     setPickedLocation(null);
-  }, [pickedLocation, setPickedLocation]);
+  }, [pickedLocation, setPickedLocation, locationAddress]);
 
   if (editId && !existingEvent && !didPrefill) {
     return (
@@ -350,7 +354,12 @@ export default function OrganizerEventCreateScreen() {
 
       if (!updatedOrCreated) {
         setLoading(false);
-        Alert.alert('Ошибка', isEdit ? 'Не удалось обновить событие' : 'Не удалось создать событие');
+        const state = useAppStore.getState();
+        const extra =
+          typeof state.organizerError === 'string' && state.organizerError.trim()
+            ? `\n\nПричина: ${state.organizerError}`
+            : '';
+        Alert.alert('Ошибка', (isEdit ? 'Не удалось обновить событие' : 'Не удалось создать событие') + extra);
         return;
       }
 
@@ -369,7 +378,18 @@ export default function OrganizerEventCreateScreen() {
       );
     } catch (error) {
       setLoading(false);
-      Alert.alert('Ошибка', editId ? 'Не удалось обновить событие' : 'Не удалось создать событие');
+      if (error instanceof ApiError) {
+        const detail =
+          typeof error.data === 'string'
+            ? error.data
+            : error.data && typeof error.data === 'object' && 'error' in (error.data as any)
+              ? String((error.data as any).error)
+              : error.message;
+        Alert.alert('Ошибка', `HTTP ${error.statusCode}\n${detail}`);
+        return;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      Alert.alert('Ошибка', message || (editId ? 'Не удалось обновить событие' : 'Не удалось создать событие'));
     }
   };
 
@@ -959,7 +979,9 @@ export default function OrganizerEventCreateScreen() {
             numberOfLines={1}
           >
             {typeof locationLat === 'number' && typeof locationLng === 'number'
-              ? `${locationLat.toFixed(6)}, ${locationLng.toFixed(6)}`
+              ? locationAddress.trim()
+                ? locationAddress.trim()
+                : `${locationLat.toFixed(6)}, ${locationLng.toFixed(6)}`
               : 'Выбрать на карте'}
           </Text>
         </View>
@@ -1229,39 +1251,47 @@ export default function OrganizerEventCreateScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* Date picker modal */}
-      <Modal visible={datePickerOpen} transparent animationType="slide" onRequestClose={() => setDatePickerOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Выберите дату</Text>
-              <TouchableOpacity onPress={() => setDatePickerOpen(false)}>
-                <Ionicons name="close" size={22} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <DateTimePicker
-              value={tempDate}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
-              themeVariant={isDarkTheme(variant) ? 'dark' : 'light'}
-              textColor={colors.text}
-              accentColor={colors.accent}
-              onChange={(e, d) => {
-                if (!d) {
-                  if (Platform.OS !== 'ios') setDatePickerOpen(false);
-                  return;
-                }
+      {/* Date picker */}
+      {Platform.OS === 'android' ? (
+        datePickerOpen ? (
+          <DateTimePicker
+            value={tempDate}
+            mode="date"
+            display="default"
+            onChange={(e, d) => {
+              setDatePickerOpen(false);
+              if (d) {
                 setTempDate(d);
-                if (Platform.OS !== 'ios') {
-                  setSelectedDate(d);
-                  setDatePickerOpen(false);
-                }
-              }}
-              minimumDate={new Date()}
-            />
+                setSelectedDate(d);
+              }
+            }}
+            minimumDate={new Date()}
+          />
+        ) : null
+      ) : (
+        <Modal visible={datePickerOpen} transparent animationType="slide" onRequestClose={() => setDatePickerOpen(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalSheet}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Выберите дату</Text>
+                <TouchableOpacity onPress={() => setDatePickerOpen(false)}>
+                  <Ionicons name="close" size={22} color={colors.text} />
+                </TouchableOpacity>
+              </View>
 
-            {Platform.OS === 'ios' && (
+              <DateTimePicker
+                value={tempDate}
+                mode="date"
+                display="inline"
+                themeVariant={isDarkTheme(variant) ? 'dark' : 'light'}
+                textColor={colors.text}
+                accentColor={colors.accent}
+                onChange={(e, d) => {
+                  if (d) setTempDate(d);
+                }}
+                minimumDate={new Date()}
+              />
+
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.modalAction} onPress={() => setDatePickerOpen(false)}>
                   <Text style={styles.modalActionText}>Отмена</Text>
@@ -1276,44 +1306,52 @@ export default function OrganizerEventCreateScreen() {
                   <Text style={[styles.modalActionText, styles.modalActionTextPrimary]}>Готово</Text>
                 </TouchableOpacity>
               </View>
-            )}
-          </View>
-        </View>
-      </Modal>
-
-      {/* Time picker modal */}
-      <Modal visible={timePickerOpen} transparent animationType="slide" onRequestClose={() => setTimePickerOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Выберите время</Text>
-              <TouchableOpacity onPress={() => setTimePickerOpen(false)}>
-                <Ionicons name="close" size={22} color={colors.text} />
-              </TouchableOpacity>
             </View>
+          </View>
+        </Modal>
+      )}
 
-            <DateTimePicker
-              value={tempTime}
-              mode="time"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              is24Hour
-              themeVariant={isDarkTheme(variant) ? 'dark' : 'light'}
-              textColor={colors.text}
-              accentColor={colors.accent}
-              onChange={(e, d) => {
-                if (!d) {
-                  if (Platform.OS !== 'ios') setTimePickerOpen(false);
-                  return;
-                }
+      {/* Time picker */}
+      {Platform.OS === 'android' ? (
+        timePickerOpen ? (
+          <DateTimePicker
+            value={tempTime}
+            mode="time"
+            display="default"
+            is24Hour
+            onChange={(e, d) => {
+              setTimePickerOpen(false);
+              if (d) {
                 setTempTime(d);
-                if (Platform.OS !== 'ios') {
-                  setSelectedTime(d);
-                  setTimePickerOpen(false);
-                }
-              }}
-            />
+                setSelectedTime(d);
+              }
+            }}
+          />
+        ) : null
+      ) : (
+        <Modal visible={timePickerOpen} transparent animationType="slide" onRequestClose={() => setTimePickerOpen(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalSheet}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Выберите время</Text>
+                <TouchableOpacity onPress={() => setTimePickerOpen(false)}>
+                  <Ionicons name="close" size={22} color={colors.text} />
+                </TouchableOpacity>
+              </View>
 
-            {Platform.OS === 'ios' && (
+              <DateTimePicker
+                value={tempTime}
+                mode="time"
+                display="spinner"
+                is24Hour
+                themeVariant={isDarkTheme(variant) ? 'dark' : 'light'}
+                textColor={colors.text}
+                accentColor={colors.accent}
+                onChange={(e, d) => {
+                  if (d) setTempTime(d);
+                }}
+              />
+
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.modalAction} onPress={() => setTimePickerOpen(false)}>
                   <Text style={styles.modalActionText}>Отмена</Text>
@@ -1328,10 +1366,10 @@ export default function OrganizerEventCreateScreen() {
                   <Text style={[styles.modalActionText, styles.modalActionTextPrimary]}>Готово</Text>
                 </TouchableOpacity>
               </View>
-            )}
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
