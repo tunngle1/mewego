@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/auth';
 import { getUserEntitlements } from './subscriptions';
 import { onParticipationAttended, onReviewCreated, onLateCancelAfterStart } from '../services/gamification';
 import { sendPushToUser } from '../services/push';
+import { hashOpaqueToken } from '../services/tokenService';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -1162,6 +1163,91 @@ router.post('/:id/attended', requireAuth, async (req: Request, res: Response) =>
   } catch (error) {
     console.error('[Events] POST /:id/attended error:', error);
     res.status(500).json({ error: 'Failed to mark as attended' });
+  }
+});
+
+// POST /api/v1/events/:id/check-in - отметка участия по QR/коду события
+// Окно: -30 минут до старта ... +3 часа после окончания
+router.post('/:id/check-in', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.auth!.userId;
+    const code = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
+    const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+
+    if (!code && !token) {
+      return res.status(400).json({ error: 'code or token is required' });
+    }
+
+    const event = await prisma.event.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+        startAt: true,
+        endAt: true,
+        durationMin: true,
+        checkInTokenHash: true,
+        checkInCode: true,
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    if (event.status === 'finished' || event.status === 'canceled') {
+      return res.status(400).json({
+        error: 'Check-in closed',
+        message: 'Организатор завершил событие. Чек-ин закрыт.',
+        eventStatus: event.status,
+      });
+    }
+
+    const now = new Date();
+    const endAt = calculateEventEndAt(event.startAt, event.durationMin, event.endAt);
+    const availableFrom = new Date(event.startAt.getTime() - 30 * 60 * 1000);
+    const expiresAt = new Date(endAt.getTime() + 3 * 60 * 60 * 1000);
+    if (now < availableFrom || now > expiresAt) {
+      return res.status(400).json({
+        error: 'Check-in window closed',
+        message: 'Отметка доступна за 30 минут до старта и в течение 3 часов после окончания события.',
+        availableFrom: availableFrom.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+      });
+    }
+
+    const participation = await prisma.participation.findUnique({
+      where: { eventId_userId: { eventId: id, userId } },
+    });
+    if (!participation) {
+      return res.status(404).json({ error: 'Participation not found' });
+    }
+    if (participation.status === 'attended') {
+      return res.json({ ok: true, status: 'attended', message: 'Already checked in' });
+    }
+    if (participation.status !== 'joined') {
+      return res.status(400).json({ error: `Cannot check in: current status is ${participation.status}` });
+    }
+
+    const tokenOk = token && event.checkInTokenHash ? hashOpaqueToken(token) === event.checkInTokenHash : false;
+    const codeOk = code && event.checkInCode ? code === event.checkInCode : false;
+    if (!tokenOk && !codeOk) {
+      return res.status(400).json({ error: 'Invalid check-in code' });
+    }
+
+    await prisma.participation.update({
+      where: { id: participation.id },
+      data: { status: 'attended', attendedAt: now },
+    });
+
+    await syncCrmParticipantForEvent({ eventId: id, userId, status: 'attended' });
+    await onParticipationAttended(userId, id);
+
+    return res.json({ ok: true, status: 'attended', eventId: id, message: 'Посещение отмечено!' });
+  } catch (error) {
+    console.error('[Events] POST /:id/check-in error:', error);
+    res.status(500).json({ error: 'Failed to check in' });
   }
 });
 

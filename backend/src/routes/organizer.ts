@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { getUserEntitlements } from './subscriptions';
+import { createOpaqueToken, hashOpaqueToken } from '../services/tokenService';
 
 // Generate a random invite code (6 alphanumeric chars)
 const generateInviteCode = (): string => {
@@ -16,6 +17,26 @@ const generateInviteLinkToken = (): string => {
 
 const router = Router();
 const prisma = new PrismaClient();
+
+const CHECK_IN_BEFORE_START_MINUTES = 30;
+const CHECK_IN_AFTER_END_HOURS = 3;
+
+const generateCheckInCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+const calculateEventEndAt = (params: { startAt: Date; durationMin: number | null; endAt: Date | null }) => {
+  if (params.endAt) return params.endAt;
+  if (typeof params.durationMin === 'number' && params.durationMin > 0) {
+    return new Date(params.startAt.getTime() + params.durationMin * 60 * 1000);
+  }
+  return params.startAt;
+};
+
+const getCheckInWindow = (event: { startAt: Date; durationMin: number | null; endAt: Date | null }) => {
+  const endAt = calculateEventEndAt({ startAt: event.startAt, durationMin: event.durationMin, endAt: event.endAt });
+  const availableFrom = new Date(event.startAt.getTime() - CHECK_IN_BEFORE_START_MINUTES * 60 * 1000);
+  const expiresAt = new Date(endAt.getTime() + CHECK_IN_AFTER_END_HOURS * 60 * 60 * 1000);
+  return { availableFrom, expiresAt, endAt };
+};
 
 const ensureUserExists = async (userId: string, role: 'user' | 'organizer' | 'admin' | 'superadmin') => {
   await prisma.user.upsert({
@@ -751,6 +772,96 @@ router.get('/events/:id/participants', requireAuth, requireRole('organizer', 'su
   } catch (error) {
     console.error('[Organizer] GET /events/:id/participants error:', error);
     res.status(500).json({ error: 'Failed to fetch participants' });
+  }
+});
+
+// GET /api/v1/organizer/events/:id/check-in - QR+код для отметки участников
+router.get('/events/:id/check-in', requireAuth, requireRole('organizer', 'superadmin'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const organizerId = req.auth!.userId;
+
+    const event = await prisma.event.findFirst({
+      where: { id, organizerId },
+      select: {
+        id: true,
+        title: true,
+        startAt: true,
+        endAt: true,
+        durationMin: true,
+        status: true,
+        checkInTokenHash: true,
+        checkInCode: true,
+        checkInIssuedAt: true,
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    const now = new Date();
+    const window = getCheckInWindow({ startAt: event.startAt, durationMin: event.durationMin, endAt: event.endAt });
+    const active = now >= window.availableFrom && now <= window.expiresAt;
+
+    if (event.status === 'finished' || event.status === 'canceled') {
+      return res.json({
+        ok: true,
+        eventId: event.id,
+        title: event.title,
+        active: false,
+        availableFrom: window.availableFrom.toISOString(),
+        expiresAt: window.expiresAt.toISOString(),
+        reason: 'Event is finished',
+      });
+    }
+
+    if (!active) {
+      return res.json({
+        ok: true,
+        eventId: event.id,
+        title: event.title,
+        active: false,
+        availableFrom: window.availableFrom.toISOString(),
+        expiresAt: window.expiresAt.toISOString(),
+      });
+    }
+
+    let code = event.checkInCode;
+    let tokenHash = event.checkInTokenHash;
+
+    if (!code || !tokenHash) {
+      const token = createOpaqueToken(32);
+      tokenHash = hashOpaqueToken(token);
+      code = generateCheckInCode();
+
+      await prisma.event.update({
+        where: { id: event.id },
+        data: {
+          checkInTokenHash: tokenHash,
+          checkInCode: code,
+          checkInIssuedAt: now,
+          endAt: event.endAt || window.endAt,
+        },
+      });
+    }
+
+    // MVP: QR содержит код события (без длинного токена), валидный только в окне чек-ина.
+    const qrPayload = JSON.stringify({ type: 'event_checkin', eventId: event.id, code });
+
+    return res.json({
+      ok: true,
+      eventId: event.id,
+      title: event.title,
+      active: true,
+      availableFrom: window.availableFrom.toISOString(),
+      expiresAt: window.expiresAt.toISOString(),
+      code,
+      qrPayload,
+    });
+  } catch (error) {
+    console.error('[Organizer] GET /events/:id/check-in error:', error);
+    res.status(500).json({ error: 'Failed to get check-in details' });
   }
 });
 

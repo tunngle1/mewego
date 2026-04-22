@@ -375,7 +375,7 @@ router.post('/push-test', requireAuth, async (req: Request, res: Response) => {
 router.patch('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = req.auth!.userId;
-    const { name, firstName, lastName, city, interests, avatarUrl, gender, birthDate, onboardingCompleted } = req.body;
+    const { name, firstName, lastName, city, interests, avatarUrl, about, gender, birthDate, onboardingCompleted } = req.body;
 
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
@@ -384,6 +384,7 @@ router.patch('/', requireAuth, async (req: Request, res: Response) => {
     if (city !== undefined) updateData.cityId = city;
     if (interests !== undefined) updateData.interests = interests;
     if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
+    if (about !== undefined) updateData.about = about;
     if (gender !== undefined) updateData.gender = gender;
     if (birthDate !== undefined) updateData.birthDate = birthDate ? new Date(birthDate) : null;
     if (onboardingCompleted === true) updateData.onboardingCompleted = true;
@@ -404,6 +405,7 @@ router.patch('/', requireAuth, async (req: Request, res: Response) => {
       firstName: user.firstName,
       lastName: user.lastName,
       avatarUrl: user.avatarUrl,
+      about: (user as any).about ?? null,
       role: user.role,
       gender: user.gender,
       birthDate: user.birthDate?.toISOString(),
@@ -481,6 +483,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
       firstName: user.firstName,
       lastName: user.lastName,
       avatarUrl: user.avatarUrl,
+      about: (user as any).about ?? null,
       role: user.role,
       gender: user.gender,
       birthDate: user.birthDate?.toISOString(),

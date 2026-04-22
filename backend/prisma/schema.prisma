@@ -24,6 +24,7 @@ model User {
   firstName     String?  @map("first_name")
   lastName      String?  @map("last_name")
   avatarUrl     String?  @map("avatar_url")
+  about         String?  @map("about")
   gender        String?  // male | female
   birthDate     DateTime? @map("birth_date")
   cityId        String?  @map("city_id")
@@ -208,6 +209,10 @@ model Event {
   priceValue          Int?     @map("price_value")
   paymentInstructions String?  @map("payment_instructions")
   status              String   @default("pending") // draft | pending | approved | rejected | canceled | finished
+  // Check-in (QR/Code) for attendance confirmation
+  checkInTokenHash    String?  @map("check_in_token_hash")
+  checkInCode         String?  @map("check_in_code")
+  checkInIssuedAt     DateTime? @map("check_in_issued_at")
   // Private events
   visibility          String   @default("public") // public | private
   inviteCode          String?  @unique @map("invite_code") // user-entered code for private access
