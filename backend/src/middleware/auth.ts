@@ -47,9 +47,22 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   const bearer = tryGetBearerToken(req);
   const jwtUserId = bearer ? verifyJwtAndGetUserId(bearer) : null;
 
-  const userId = (jwtUserId || (req.headers['x-user-id'] as string)) as string;
+  const headerUserId = (req.headers['x-user-id'] as string) || '';
   const role = req.headers['x-user-role'] as string;
   const testAuth = req.headers['x-test-auth'] as string;
+
+  // Test-auth can (optionally) override JWT auth for `test_*` users.
+  // This is gated by a shared secret and is meant for controlled testing only.
+  const testAuthOk =
+    ALLOW_TEST_HEADERS &&
+    typeof testAuth === 'string' &&
+    testAuth.trim().length > 0 &&
+    testAuth.trim() === TEST_AUTH_KEY.trim();
+  const canUseHeaderTestIdentity = testAuthOk && typeof headerUserId === 'string' && headerUserId.startsWith('test_');
+
+  // If test-auth is valid and caller provided a `test_*` identity, prefer it over JWT subject.
+  const effectiveJwtUserId = canUseHeaderTestIdentity ? null : jwtUserId;
+  const userId = (effectiveJwtUserId || headerUserId) as string;
 
   if (!userId) {
     req.auth = {
@@ -63,12 +76,10 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   const isTestUserId = typeof userId === 'string' && userId.startsWith('test_');
   const canUseTestHeaders =
     // Never allow header-based overrides when request is JWT-authenticated.
-    !jwtUserId &&
-    ALLOW_TEST_HEADERS &&
+    !effectiveJwtUserId &&
+    testAuthOk &&
     isTestUserId &&
-    typeof testAuth === 'string' &&
-    testAuth.trim().length > 0 &&
-    testAuth.trim() === TEST_AUTH_KEY.trim();
+    true;
 
   prisma.user
     .findUnique({ where: { id: userId }, select: { role: true } })
