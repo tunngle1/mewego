@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../src/contexts/ThemeContext';
@@ -22,6 +22,7 @@ export default function TestLoginScreen() {
 
   const [role, setRole] = useState<Role>('user');
   const [name, setName] = useState('');
+  const [storeHydrated, setStoreHydrated] = useState(() => useAppStore.persist.hasHydrated());
   const testKeyPresent = Boolean(process.env.EXPO_PUBLIC_TEST_AUTH_KEY && String(process.env.EXPO_PUBLIC_TEST_AUTH_KEY).trim());
   const apiUrl = (process.env.EXPO_PUBLIC_API_URL || '').trim();
   const buildInfo = useMemo(() => {
@@ -30,6 +31,12 @@ export default function TestLoginScreen() {
       ((Constants.manifest2 as any)?.extra?.expoClient?.version as string | undefined) ||
       '';
     return v ? `v${v}` : '';
+  }, []);
+
+  useEffect(() => {
+    const unsub = useAppStore.persist.onFinishHydration(() => setStoreHydrated(true));
+    if (useAppStore.persist.hasHydrated()) setStoreHydrated(true);
+    return unsub;
   }, []);
 
   const styles = useMemo(
@@ -100,6 +107,9 @@ export default function TestLoginScreen() {
           alignItems: 'center',
           ...shadows.md,
         },
+        submitDisabled: {
+          opacity: 0.6,
+        },
         submitText: { fontSize: fontSize.md, fontWeight: fontWeight.black, color: colors.white },
         note: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18 },
         warn: {
@@ -116,6 +126,10 @@ export default function TestLoginScreen() {
   );
 
   const handleStart = () => {
+    if (!storeHydrated) {
+      Alert.alert('Подождите', 'Инициализация хранилища… Попробуйте ещё раз через секунду.');
+      return;
+    }
     const trimmed = name.trim();
     if (!trimmed) {
       Alert.alert('Имя', 'Введите имя для тестового входа');
@@ -154,6 +168,15 @@ export default function TestLoginScreen() {
           <Text style={styles.note}>
             {buildInfo ? `${buildInfo} • ` : ''}API: {apiUrl || '(не задано)'} • TestAuthKey: {testKeyPresent ? 'OK' : 'MISSING'}
           </Text>
+          {!storeHydrated ? (
+            <View style={styles.warn}>
+              <Text style={styles.warnTitle}>Инициализация…</Text>
+              <Text style={styles.warnText}>Дождитесь загрузки хранилища, иначе предыдущая сессия может перезаписать тестовый вход.</Text>
+              <View style={{ marginTop: 10, alignItems: 'flex-start' }}>
+                <ActivityIndicator />
+              </View>
+            </View>
+          ) : null}
 
           <Text style={styles.label}>Роль</Text>
           <View style={styles.roleGrid}>
@@ -182,7 +205,12 @@ export default function TestLoginScreen() {
             placeholderTextColor={colors.textMuted}
           />
 
-          <TouchableOpacity style={styles.submit} onPress={handleStart} activeOpacity={0.9}>
+          <TouchableOpacity
+            style={[styles.submit, !storeHydrated && styles.submitDisabled]}
+            onPress={handleStart}
+            activeOpacity={0.9}
+            disabled={!storeHydrated}
+          >
             <Text style={styles.submitText}>Войти</Text>
           </TouchableOpacity>
         </View>
