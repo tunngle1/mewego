@@ -21,7 +21,8 @@ const SMTP_IP_FAMILY = SMTP_IP_FAMILY_RAW === '4' ? 4 : SMTP_IP_FAMILY_RAW === '
 const SMTP_TLS_SERVERNAME = (process.env.SMTP_TLS_SERVERNAME || '').trim();
 const SMTP_FORCE_IPV6 = String(process.env.SMTP_FORCE_IPV6 || 'false').trim().toLowerCase() === 'true';
 
-const hasEmailTransportConfig = Boolean(EMAIL_FROM && SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASSWORD);
+const hasSmtpAuth = Boolean(SMTP_USER && SMTP_PASSWORD);
+const hasEmailTransportConfig = Boolean(EMAIL_FROM && SMTP_HOST && SMTP_PORT);
 
 let transporterCache: { sendMail: (payload: any) => Promise<any> } | null | undefined;
 
@@ -43,10 +44,14 @@ const getTransporter = () => {
       host: SMTP_HOST,
       port: SMTP_PORT,
       secure: SMTP_SECURE,
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASSWORD,
-      },
+      ...(hasSmtpAuth
+        ? {
+            auth: {
+              user: SMTP_USER,
+              pass: SMTP_PASSWORD,
+            },
+          }
+        : {}),
       connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
       greetingTimeout: SMTP_GREETING_TIMEOUT_MS,
       socketTimeout: SMTP_SOCKET_TIMEOUT_MS,
