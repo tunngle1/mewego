@@ -8,6 +8,25 @@ import { CATEGORY_LABELS, CATEGORY_SLUGS } from '../src/constants';
 import type { Event } from '../src/types';
 import Constants from 'expo-constants';
 
+const MapMarkerVisual = ({ color, size = 18 }: { color: string; size?: number }) => (
+  <View
+    collapsable={false}
+    style={{
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      backgroundColor: color,
+      borderWidth: 3,
+      borderColor: '#FFFFFF',
+      shadowColor: '#000000',
+      shadowOpacity: 0.2,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 4,
+    }}
+  />
+);
+
 export default function MapScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ mode?: string; centerLat?: string; centerLng?: string }>();
@@ -338,18 +357,27 @@ export default function MapScreen() {
                     key={e.id}
                     point={{ lat: p.latitude, lon: p.longitude }}
                     onPress={() => setSelectedEvent(e)}
-                  />
+                    handled={true}
+                    anchor={{ x: 0.5, y: 0.5 }}
+                  >
+                    <MapMarkerVisual color="#E85D75" size={16} />
+                  </Marker>
                 );
               })
             : null}
 
           {mode === 'pick' && (pickCenter || pickedLocation) ? (
             <Marker
+              key={`pick-${(pickCenter || pickedLocation)!.latitude.toFixed(6)}-${(pickCenter || pickedLocation)!.longitude.toFixed(6)}`}
               point={{
                 lat: (pickCenter || pickedLocation)!.latitude,
                 lon: (pickCenter || pickedLocation)!.longitude,
               }}
-            />
+              handled={true}
+              anchor={{ x: 0.5, y: 0.5 }}
+            >
+              <MapMarkerVisual color="#2E86FF" size={20} />
+            </Marker>
           ) : null}
         </YaMap>
       </View>

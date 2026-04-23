@@ -11,6 +11,12 @@ type Props = {
 const hasFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
+const EventMarkerVisual = () => (
+  <View style={styles.markerWrap} collapsable={false}>
+    <View style={styles.markerDot} />
+  </View>
+);
+
 export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
   const coords = location.coordinates;
   const latitude = coords?.latitude;
@@ -99,7 +105,9 @@ export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
           }}
           userLocationIcon={Platform.OS === 'ios' ? undefined : undefined}
         >
-          <Marker point={{ lat: latitude, lon: longitude }} />
+          <Marker point={{ lat: latitude, lon: longitude }} anchor={{ x: 0.5, y: 0.5 }} handled={true}>
+            <EventMarkerVisual />
+          </Marker>
         </YaMap>
       </View>
     </View>
@@ -119,6 +127,27 @@ const styles = StyleSheet.create({
   map: {
     width: '100%',
     height: 220,
+  },
+  markerWrap: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#E85D75',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  markerDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#FFFFFF',
   },
   fallback: {
     backgroundColor: '#F3F4F6',
