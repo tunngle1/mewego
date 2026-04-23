@@ -54,6 +54,10 @@ export default function MapScreen() {
       '';
     return typeof k === 'string' ? k.trim() : '';
   }, []);
+  const yandexGeocoderKey = useMemo(() => {
+    const k = process.env.EXPO_PUBLIC_YANDEX_GEOCODER_API_KEY || yandexKey;
+    return typeof k === 'string' ? k.trim() : '';
+  }, [yandexKey]);
 
   const mapModule = useMemo(() => {
     // Without API key we must not mount YaMap at all (Android may crash).
@@ -228,9 +232,9 @@ export default function MapScreen() {
     };
 
     try {
-      if (yandexKey) {
-        const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${encodeURIComponent(
-          yandexKey
+      if (yandexGeocoderKey) {
+        const url = `https://geocode-maps.yandex.ru/v1/?apikey=${encodeURIComponent(
+          yandexGeocoderKey
         )}&format=json&lang=ru_RU&geocode=${encodeURIComponent(`${longitude},${latitude}`)}&results=1`;
         const res = await fetch(url, { headers: { Accept: 'application/json' } });
         const json = (await res.json()) as any;
@@ -275,9 +279,9 @@ export default function MapScreen() {
     };
 
     try {
-      if (yandexKey) {
-        const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${encodeURIComponent(
-          yandexKey
+      if (yandexGeocoderKey) {
+        const url = `https://geocode-maps.yandex.ru/v1/?apikey=${encodeURIComponent(
+          yandexGeocoderKey
         )}&format=json&lang=ru_RU&geocode=${encodeURIComponent(query)}&results=1`;
         const res = await fetch(url, { headers: { Accept: 'application/json' } });
         const json = (await res.json()) as any;

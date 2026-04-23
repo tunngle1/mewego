@@ -135,6 +135,7 @@ export default function OrganizerEventCreateScreen() {
   const [customInviteCode, setCustomInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
   const yandexKey = String((Constants.expoConfig?.extra as any)?.yandexMapKitApiKey || (Constants.manifest2 as any)?.extra?.expoClient?.extra?.yandexMapKitApiKey || '').trim();
+  const yandexGeocoderKey = String(process.env.EXPO_PUBLIC_YANDEX_GEOCODER_API_KEY || yandexKey || '').trim();
 
   React.useEffect(() => {
     if (!editId) return;
@@ -937,9 +938,9 @@ export default function OrganizerEventCreateScreen() {
             let lon = NaN;
             let effectiveQuery = q;
 
-            if (yandexKey) {
-              const yandexUrl = `https://geocode-maps.yandex.ru/1.x/?apikey=${encodeURIComponent(
-                yandexKey
+            if (yandexGeocoderKey) {
+              const yandexUrl = `https://geocode-maps.yandex.ru/v1/?apikey=${encodeURIComponent(
+                yandexGeocoderKey
               )}&format=json&lang=ru_RU&geocode=${encodeURIComponent(q)}&results=1`;
               const yandexRes = await fetch(yandexUrl, {
                 headers: {
