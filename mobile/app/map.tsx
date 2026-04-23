@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../src/contexts/ThemeContext';
@@ -27,6 +27,12 @@ const MapMarkerVisual = ({ color, size = 18 }: { color: string; size?: number })
   />
 );
 
+type AddressSuggestion = {
+  latitude: number;
+  longitude: number;
+  address: string;
+};
+
 export default function MapScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ mode?: string; centerLat?: string; centerLng?: string; query?: string }>();
@@ -46,6 +52,8 @@ export default function MapScreen() {
   const [mapReady, setMapReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState(typeof params.query === 'string' ? params.query : '');
   const [searchingAddress, setSearchingAddress] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<AddressSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [lastGeocodeDebug, setLastGeocodeDebug] = useState('');
 
   const yandexKey = useMemo(() => {
@@ -117,6 +125,15 @@ export default function MapScreen() {
       return typeof lat === 'number' && Number.isFinite(lat) && typeof lng === 'number' && Number.isFinite(lng);
     });
   }, [events]);
+
+  const paramCenterLat = typeof params.centerLat === 'string' ? Number(params.centerLat) : NaN;
+  const paramCenterLng = typeof params.centerLng === 'string' ? Number(params.centerLng) : NaN;
+  const paramCenter =
+    Number.isFinite(paramCenterLat) && Number.isFinite(paramCenterLng)
+      ? { latitude: paramCenterLat, longitude: paramCenterLng }
+      : null;
+
+  const suggestionBiasCenter = pickCenter || pickedLocation || paramCenter || { latitude: 55.751244, longitude: 37.618423 };
 
   const openInYandexMaps = async (e: Event) => {
     const lat = e.location.coordinates!.latitude;
@@ -203,13 +220,6 @@ export default function MapScreen() {
   const Marker = (mapModule as any).Marker;
   const initial = eventsWithCoords[0]?.location.coordinates || { latitude: 55.751244, longitude: 37.618423 };
 
-  const paramCenterLat = typeof params.centerLat === 'string' ? Number(params.centerLat) : NaN;
-  const paramCenterLng = typeof params.centerLng === 'string' ? Number(params.centerLng) : NaN;
-  const paramCenter =
-    Number.isFinite(paramCenterLat) && Number.isFinite(paramCenterLng)
-      ? { latitude: paramCenterLat, longitude: paramCenterLng }
-      : null;
-
   const initialPick = pickCenter || pickedLocation || paramCenter || initial;
 
   const reverseGeocode = async (latitude: number, longitude: number) => {
@@ -263,45 +273,53 @@ export default function MapScreen() {
     }
   };
 
-  const geocodeAddress = async (query: string): Promise<{ latitude: number; longitude: number; address: string } | null> => {
+  const geocodeCandidates = async (query: string): Promise<AddressSuggestion[]> => {
     const summarizeYandexResponse = (status: number, json: any): string => {
       const found = json?.response?.GeoObjectCollection?.featureMember;
       const count = Array.isArray(found) ? found.length : 0;
       const text = json?.response?.GeoObjectCollection?.metaDataProperty?.GeocoderResponseMetaData?.request ?? query;
       return `Yandex Geocoder: HTTP ${status}, results=${count}, request="${String(text)}"`;
     };
-    const parseYandexResult = (json: any): { latitude: number; longitude: number; address: string } | null => {
-      const member = json?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject;
-      const pos = typeof member?.Point?.pos === 'string' ? member.Point.pos.trim() : '';
-      const address =
-        typeof member?.metaDataProperty?.GeocoderMetaData?.text === 'string'
-          ? member.metaDataProperty.GeocoderMetaData.text.trim()
-          : query.trim();
-      if (!pos) return null;
-      const [lonStr, latStr] = pos.split(/\s+/);
-      const lat = Number(latStr);
-      const lon = Number(lonStr);
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-      return { latitude: lat, longitude: lon, address };
+    const parseYandexResults = (json: any): AddressSuggestion[] => {
+      const members = json?.response?.GeoObjectCollection?.featureMember;
+      if (!Array.isArray(members)) return [];
+      return members
+        .map((entry: any) => {
+          const member = entry?.GeoObject;
+          const pos = typeof member?.Point?.pos === 'string' ? member.Point.pos.trim() : '';
+          const address =
+            typeof member?.metaDataProperty?.GeocoderMetaData?.text === 'string'
+              ? member.metaDataProperty.GeocoderMetaData.text.trim()
+              : query.trim();
+          if (!pos) return null;
+          const [lonStr, latStr] = pos.split(/\s+/);
+          const lat = Number(latStr);
+          const lon = Number(lonStr);
+          if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+          return { latitude: lat, longitude: lon, address };
+        })
+        .filter(Boolean) as AddressSuggestion[];
     };
 
     try {
       if (yandexGeocoderKey) {
         const url = `https://geocode-maps.yandex.ru/v1/?apikey=${encodeURIComponent(
           yandexGeocoderKey
-        )}&format=json&lang=ru_RU&geocode=${encodeURIComponent(query)}&results=1`;
+        )}&format=json&lang=ru_RU&geocode=${encodeURIComponent(query)}&results=5&ll=${encodeURIComponent(
+          `${suggestionBiasCenter.longitude},${suggestionBiasCenter.latitude}`
+        )}&spn=0.4,0.4`;
         const res = await fetch(url, { headers: { Accept: 'application/json' } });
         const json = (await res.json()) as any;
         setLastGeocodeDebug(summarizeYandexResponse(res.status, json));
-        const parsed = parseYandexResult(json);
-        if (parsed) return parsed;
+        const parsed = parseYandexResults(json);
+        if (parsed.length) return parsed;
       }
     } catch (e) {
       setLastGeocodeDebug(`Yandex Geocoder error: ${e instanceof Error ? e.message : String(e)}`);
     }
 
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`;
       const res = await fetch(url, {
         headers: {
           Accept: 'application/json',
@@ -309,16 +327,48 @@ export default function MapScreen() {
         },
       });
       const json = (await res.json()) as any[];
-      const item = Array.isArray(json) ? json[0] : null;
-      const latitude = item?.lat ? Number(item.lat) : NaN;
-      const longitude = item?.lon ? Number(item.lon) : NaN;
-      const address = typeof item?.display_name === 'string' ? item.display_name.trim() : query.trim();
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-      return { latitude, longitude, address };
+      return (Array.isArray(json) ? json : [])
+        .map((item: any) => {
+          const latitude = item?.lat ? Number(item.lat) : NaN;
+          const longitude = item?.lon ? Number(item.lon) : NaN;
+          const address = typeof item?.display_name === 'string' ? item.display_name.trim() : query.trim();
+          if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+          return { latitude, longitude, address };
+        })
+        .filter(Boolean) as AddressSuggestion[];
     } catch {
-      return null;
+      return [];
     }
   };
+
+  const geocodeAddress = async (query: string): Promise<AddressSuggestion | null> => {
+    const results = await geocodeCandidates(query);
+    return results[0] || null;
+  };
+
+  useEffect(() => {
+    if (mode !== 'pick') return;
+    const query = searchQuery.trim();
+    if (query.length < 2) {
+      setSearchSuggestions([]);
+      setLoadingSuggestions(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingSuggestions(true);
+    const timer = setTimeout(async () => {
+      const results = await geocodeCandidates(query);
+      if (cancelled) return;
+      setSearchSuggestions(results);
+      setLoadingSuggestions(false);
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [mode, searchQuery, suggestionBiasCenter.latitude, suggestionBiasCenter.longitude]);
 
   const extractLatLonFromMapPress = (e: any): { lat: number; lon: number } | null => {
     const tryPoint = (c: any): { lat: number; lon: number } | null => {
@@ -464,7 +514,12 @@ export default function MapScreen() {
       </View>
 
       {mode === 'pick' ? (
-        <View style={styles.bottomSheet} pointerEvents="box-none">
+        <KeyboardAvoidingView
+          style={styles.bottomSheet}
+          pointerEvents="box-none"
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
+        >
           <View style={styles.card}>
             <Text style={styles.hintTitle}>Выбор точки</Text>
             <Text style={styles.hintText}>
@@ -526,6 +581,33 @@ export default function MapScreen() {
               </TouchableOpacity>
             </View>
 
+            {loadingSuggestions ? <Text style={styles.meta}>Ищем варианты…</Text> : null}
+
+            {searchSuggestions.length ? (
+              <View style={styles.suggestionsCard}>
+                {searchSuggestions.map((item, idx) => (
+                  <TouchableOpacity
+                    key={`${item.latitude.toFixed(6)}-${item.longitude.toFixed(6)}-${idx}`}
+                    style={[styles.suggestionItem, idx < searchSuggestions.length - 1 && styles.suggestionItemBorder]}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      setPickCenter({ latitude: item.latitude, longitude: item.longitude });
+                      setPickAddress(item.address);
+                      setSearchQuery(item.address);
+                      setSearchSuggestions([]);
+                    }}
+                  >
+                    <Text style={styles.suggestionTitle} numberOfLines={1}>
+                      {item.address}
+                    </Text>
+                    <Text style={styles.suggestionSub} numberOfLines={1}>
+                      {item.latitude.toFixed(6)}, {item.longitude.toFixed(6)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
+
             <View style={[styles.cardActions, { marginTop: 12 }]}>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.actionPrimary]}
@@ -564,7 +646,7 @@ export default function MapScreen() {
                   : 'Тапните по карте…'}
             </Text>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       ) : null}
 
       {mode === 'browse' ? (
@@ -770,6 +852,33 @@ const createStyles = (
       color: colors.white,
       fontSize: fontSize.sm,
       fontWeight: fontWeight.black,
+    },
+    suggestionsCard: {
+      marginTop: spacing.sm,
+      backgroundColor: colors.background,
+      borderRadius: borderRadius.xl,
+      borderWidth: 1,
+      borderColor: colors.neutralMuted,
+      overflow: 'hidden',
+      maxHeight: 220,
+    },
+    suggestionItem: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    suggestionItemBorder: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.neutralMuted,
+    },
+    suggestionTitle: {
+      color: colors.text,
+      fontSize: fontSize.sm,
+      fontWeight: fontWeight.bold,
+    },
+    suggestionSub: {
+      marginTop: 2,
+      color: colors.textMuted,
+      fontSize: fontSize.xs,
     },
     card: {
       backgroundColor: colors.white,
