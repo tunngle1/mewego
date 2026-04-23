@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, InteractionManager, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../src/contexts/ThemeContext';
@@ -55,6 +55,7 @@ export default function MapScreen() {
   const [searchSuggestions, setSearchSuggestions] = useState<AddressSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [lastGeocodeDebug, setLastGeocodeDebug] = useState('');
+  const isMountedRef = useRef(true);
 
   const yandexKey = useMemo(() => {
     const k =
@@ -97,6 +98,13 @@ export default function MapScreen() {
   }, [yandexKey]);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!mapModule) {
       setMapReady(false);
       return;
@@ -134,6 +142,18 @@ export default function MapScreen() {
       : null;
 
   const suggestionBiasCenter = pickCenter || pickedLocation || paramCenter || { latitude: 55.751244, longitude: 37.618423 };
+
+  const applyPickedLocationAndGoBack = (location: { latitude: number; longitude: number; address?: string } | null) => {
+    Keyboard.dismiss();
+    setSearchSuggestions([]);
+    setLoadingSuggestions(false);
+    setPickedLocation(location);
+    InteractionManager.runAfterInteractions(() => {
+      if (isMountedRef.current) {
+        router.back();
+      }
+    });
+  };
 
   const openInYandexMaps = async (e: Event) => {
     const lat = e.location.coordinates!.latitude;
@@ -359,7 +379,7 @@ export default function MapScreen() {
     setLoadingSuggestions(true);
     const timer = setTimeout(async () => {
       const results = await geocodeCandidates(query);
-      if (cancelled) return;
+      if (cancelled || !isMountedRef.current) return;
       setSearchSuggestions(results);
       setLoadingSuggestions(false);
     }, 350);
@@ -461,6 +481,7 @@ export default function MapScreen() {
                   setPickCenter({ latitude: p.lat, longitude: p.lon });
                   setPickAddress('');
                   const addr = await reverseGeocode(p.lat, p.lon);
+                  if (!isMountedRef.current) return;
                   if (addr) {
                     setPickAddress(addr);
                     setSearchQuery(addr);
@@ -472,6 +493,7 @@ export default function MapScreen() {
                   setPickCenter({ latitude: p.lat, longitude: p.lon });
                   setPickAddress('');
                   const addr = await reverseGeocode(p.lat, p.lon);
+                  if (!isMountedRef.current) return;
                   if (addr) {
                     setPickAddress(addr);
                     setSearchQuery(addr);
@@ -540,6 +562,7 @@ export default function MapScreen() {
                   setSearchingAddress(true);
                   try {
                     const result = await geocodeAddress(query);
+                    if (!isMountedRef.current) return;
                     if (!result) {
                       Alert.alert('Не найдено', `Не удалось найти адрес.\n\n${lastGeocodeDebug || 'Yandex не вернул подходящий результат.'}`);
                       return;
@@ -565,6 +588,7 @@ export default function MapScreen() {
                   setSearchingAddress(true);
                   try {
                     const result = await geocodeAddress(query);
+                    if (!isMountedRef.current) return;
                     if (!result) {
                       Alert.alert('Не найдено', `Не удалось найти адрес.\n\n${lastGeocodeDebug || 'Yandex не вернул подходящий результат.'}`);
                       return;
@@ -591,6 +615,7 @@ export default function MapScreen() {
                     style={[styles.suggestionItem, idx < searchSuggestions.length - 1 && styles.suggestionItemBorder]}
                     activeOpacity={0.85}
                     onPress={() => {
+                      Keyboard.dismiss();
                       setPickCenter({ latitude: item.latitude, longitude: item.longitude });
                       setPickAddress(item.address);
                       setSearchQuery(item.address);
@@ -614,12 +639,11 @@ export default function MapScreen() {
                 onPress={() => {
                   const c = pickCenter || pickedLocation || initialPick;
                   const effectiveAddress = pickAddress || searchQuery.trim() || (pickedLocation as any)?.address || '';
-                  setPickedLocation({
+                  applyPickedLocationAndGoBack({
                     latitude: c.latitude,
                     longitude: c.longitude,
                     ...(effectiveAddress ? { address: effectiveAddress } : {}),
                   });
-                  router.back();
                 }}
                 activeOpacity={0.9}
               >
@@ -628,9 +652,9 @@ export default function MapScreen() {
               <TouchableOpacity
                 style={[styles.actionBtn, styles.actionSecondary]}
                 onPress={() => {
-                  setPickedLocation(null);
+                  Keyboard.dismiss();
                   setPickCenter(null);
-                  router.back();
+                  applyPickedLocationAndGoBack(null);
                 }}
                 activeOpacity={0.9}
               >
