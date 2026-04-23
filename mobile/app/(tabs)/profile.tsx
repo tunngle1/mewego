@@ -24,7 +24,7 @@ import { getThemeEmoji, getThemeLabel, themeOptions } from '../../src/constants/
 export default function ProfileScreen() {
   const router = useRouter();
   const { colors, spacing, fontSize, fontWeight, borderRadius, shadows, variant, setTheme } = useTheme();
-  const { user, logout, refreshGamification, refreshSubscriptionStatus, organizerEvents } = useAppStore();
+  const { user, logout, refreshGamification, refreshSubscriptionStatus, organizerEvents, isTestSession } = useAppStore();
   const updateUser = useAppStore((s) => s.updateUser);
   const [refreshing, setRefreshing] = useState(false);
   const [pushToken, setPushToken] = useState<string | null>(null);
@@ -41,6 +41,7 @@ export default function ProfileScreen() {
 
   const syncMe = useCallback(async () => {
     if (!user) return;
+    if (isTestSession) return;
     try {
       const me = await api.getMe();
       if (me?.role && me.role !== user.role) {
@@ -50,7 +51,7 @@ export default function ProfileScreen() {
     } catch {
       // ignore (offline etc)
     }
-  }, [updateUser, user]);
+  }, [isTestSession, updateUser, user]);
 
   useEffect(() => {
     syncMe();

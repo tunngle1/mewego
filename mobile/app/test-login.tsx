@@ -136,7 +136,13 @@ export default function TestLoginScreen() {
       return;
     }
     startTestSession({ role, name: trimmed });
-    router.replace('/');
+    const target =
+      role === 'superadmin' || role === 'admin'
+        ? '/(admin)/dashboard'
+        : role === 'organizer'
+          ? '/(organizer)/dashboard'
+          : '/(tabs)/explore';
+    router.replace(target as any);
   };
 
   return (

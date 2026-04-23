@@ -150,7 +150,12 @@ export default function Index() {
     );
   }
 
-  // All roles enter the main app as participant UI.
-  // Admin panel is opened explicitly from Profile.
-  return <Redirect href="/(tabs)/explore" />;
+  const target =
+    user.role === 'superadmin' || user.role === 'admin'
+      ? '/(admin)/dashboard'
+      : user.role === 'organizer'
+        ? '/(organizer)/dashboard'
+        : '/(tabs)/explore';
+
+  return <Redirect href={target as any} />;
 }
