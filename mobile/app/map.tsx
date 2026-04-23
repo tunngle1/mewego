@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, InteractionManager, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, InteractionManager, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../src/contexts/ThemeContext';
@@ -8,23 +8,25 @@ import { CATEGORY_LABELS, CATEGORY_SLUGS } from '../src/constants';
 import type { Event } from '../src/types';
 import Constants from 'expo-constants';
 
-const MapMarkerVisual = ({ color, size = 18 }: { color: string; size?: number }) => (
+const MapMarkerVisual = ({ size = 40 }: { size?: number }) => (
   <View
     collapsable={false}
     style={{
       width: size,
       height: size,
-      borderRadius: size / 2,
-      backgroundColor: color,
-      borderWidth: 3,
-      borderColor: '#FFFFFF',
-      shadowColor: '#000000',
-      shadowOpacity: 0.2,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
     }}
-  />
+  >
+    <Image
+      source={require('../assets/markers/map-pin.png')}
+      style={{
+        width: size,
+        height: size,
+        resizeMode: 'contain',
+      }}
+    />
+  </View>
 );
 
 type AddressSuggestion = {
@@ -511,9 +513,9 @@ export default function MapScreen() {
                     point={{ lat: p.latitude, lon: p.longitude }}
                     onPress={() => setSelectedEvent(e)}
                     handled={true}
-                    anchor={{ x: 0.5, y: 0.5 }}
+                    anchor={{ x: 0.5, y: 1 }}
                   >
-                    <MapMarkerVisual color="#E85D75" size={16} />
+                    <MapMarkerVisual size={36} />
                   </Marker>
                 );
               })
@@ -527,9 +529,9 @@ export default function MapScreen() {
                 lon: (pickCenter || pickedLocation)!.longitude,
               }}
               handled={true}
-              anchor={{ x: 0.5, y: 0.5 }}
+              anchor={{ x: 0.5, y: 1 }}
             >
-              <MapMarkerVisual color="#2E86FF" size={20} />
+              <MapMarkerVisual size={42} />
             </Marker>
           ) : null}
         </YaMap>
