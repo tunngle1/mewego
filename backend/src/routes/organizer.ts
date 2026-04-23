@@ -47,7 +47,14 @@ const ensureUserExists = async (userId: string, role: 'user' | 'organizer' | 'ad
     create: {
       id: userId,
       role,
-      name: role === 'organizer' ? 'Test Organizer' : role === 'admin' ? 'Test Admin' : 'Test User',
+      name:
+        role === 'superadmin'
+          ? 'SuperAdmin'
+          : role === 'admin'
+            ? 'Admin'
+            : role === 'organizer'
+              ? 'Organizer'
+              : 'User',
     },
   });
 };

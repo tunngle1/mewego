@@ -433,7 +433,14 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
       user = await prisma.user.create({
         data: {
           id: userId,
-          name: 'Test User',
+          name:
+            req.auth!.role === 'superadmin'
+              ? 'SuperAdmin'
+              : req.auth!.role === 'admin'
+                ? 'Admin'
+                : req.auth!.role === 'organizer'
+                  ? 'Organizer'
+                  : 'User',
           role: req.auth!.role,
         },
       });

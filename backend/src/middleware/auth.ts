@@ -119,7 +119,18 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
           .upsert({
             where: { id: userId },
             update: { role: headerRole, lastActiveAt: new Date() },
-            create: { id: userId, role: headerRole, name: 'Test User' },
+            create: {
+              id: userId,
+              role: headerRole,
+              name:
+                headerRole === 'superadmin'
+                  ? 'SuperAdmin'
+                  : headerRole === 'admin'
+                    ? 'Admin'
+                    : headerRole === 'organizer'
+                      ? 'Organizer'
+                      : 'User',
+            },
           })
           .then(() => {
             req.auth = { userId, role: headerRole };

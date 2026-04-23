@@ -375,11 +375,11 @@ export const useAppStore = create<AppStore>()(
       },
 
       startTestSession: ({ role, name }) => {
-        const safeName = String(name || '').trim() || 'Тест';
+        const safeName = String(name || '').trim() || 'User';
         const testUser: User = {
           ...MOCK_USER,
           id: `test_${role}`,
-          email: `test_${role}@mewego.local`,
+          email: `${role}@mewego.local`,
           role,
           name: safeName,
           onboardingCompleted: true,
