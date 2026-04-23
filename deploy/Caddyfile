@@ -6,6 +6,11 @@ api.mewego.ru {
     reverse_proxy backend:3000
   }
 
+  @reset path /auth/reset-password
+  handle @reset {
+    reverse_proxy backend:3000
+  }
+
   # Optional: serve 404 for everything else on api subdomain
   handle {
     respond "Not Found" 404

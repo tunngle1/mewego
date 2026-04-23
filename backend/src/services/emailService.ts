@@ -113,16 +113,20 @@ export const buildVerifyEmailMessage = (params: { code: string; expiresInMinutes
   return { subject, text, html };
 };
 
-export const buildResetPasswordMessage = (params: { resetUrl: string; appName?: string }) => {
+export const buildResetPasswordMessage = (params: { resetUrl: string; appUrl?: string; appName?: string }) => {
   const appName = params.appName || 'ME·WE·GO';
   const subject = `Сброс пароля в ${appName}`;
-  const text = `Чтобы задать новый пароль, откройте ссылку: ${params.resetUrl}`;
+  const text = params.appUrl
+    ? `Чтобы задать новый пароль, откройте ссылку: ${params.resetUrl}\nЕсли приложение установлено на этом устройстве, можно открыть его напрямую: ${params.appUrl}`
+    : `Чтобы задать новый пароль, откройте ссылку: ${params.resetUrl}`;
   const html = `<div style="font-family:Arial,sans-serif;font-size:16px;line-height:1.5;color:#111827;">
   <h2 style="margin-bottom:16px;">Сброс пароля</h2>
   <p style="margin:0 0 16px;">Мы получили запрос на сброс пароля для вашего аккаунта в ${appName}.</p>
   <p style="margin:0 0 24px;"><a href="${params.resetUrl}" style="display:inline-block;padding:12px 18px;background:#111827;color:#ffffff;text-decoration:none;border-radius:8px;">Задать новый пароль</a></p>
+  ${params.appUrl ? `<p style="margin:0 0 16px;"><a href="${params.appUrl}" style="display:inline-block;padding:12px 18px;background:#e5e7eb;color:#111827;text-decoration:none;border-radius:8px;">Открыть в приложении</a></p>` : ''}
   <p style="margin:0;color:#6b7280;">Если вы не запрашивали сброс, просто проигнорируйте это письмо.</p>
   <p style="margin:8px 0 0;color:#2563eb;word-break:break-all;">${params.resetUrl}</p>
+  ${params.appUrl ? `<p style="margin:8px 0 0;color:#6b7280;word-break:break-all;">Открыть в приложении: ${params.appUrl}</p>` : ''}
 </div>`;
 
   return { subject, text, html };

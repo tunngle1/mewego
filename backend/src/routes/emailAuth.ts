@@ -207,9 +207,9 @@ const issuePasswordReset = async (user: { id: string; email: string }) => {
     },
   });
 
-  const resetUrl = buildAppDeepLink(`/auth/reset-password?token=${encodeURIComponent(token)}`);
-  const resetFallbackUrl = buildAbsoluteUrl(`/auth/reset-password?token=${encodeURIComponent(token)}`);
-  const message = buildResetPasswordMessage({ resetUrl });
+  const appUrl = buildAppDeepLink(`/auth/reset-password?token=${encodeURIComponent(token)}`);
+  const resetUrl = buildAbsoluteUrl(`/auth/reset-password?token=${encodeURIComponent(token)}`);
+  const message = buildResetPasswordMessage({ resetUrl, appUrl });
 
   if (!isEmailTransportConfigured()) {
     await logEmailResult({
@@ -219,7 +219,7 @@ const issuePasswordReset = async (user: { id: string; email: string }) => {
       category: 'transactional',
       status: 'skipped',
       error: 'Email transport is not configured',
-      metadataJson: JSON.stringify({ resetUrl, resetFallbackUrl }),
+      metadataJson: JSON.stringify({ resetUrl, appUrl }),
     });
     return { deliveryStatus: 'skipped' as const, resetUrl };
   }
@@ -239,7 +239,7 @@ const issuePasswordReset = async (user: { id: string; email: string }) => {
       category: 'transactional',
       status: 'sent',
       providerMessageId: info.messageId || null,
-      metadataJson: JSON.stringify({ resetUrl, resetFallbackUrl }),
+      metadataJson: JSON.stringify({ resetUrl, appUrl }),
     });
 
     return { deliveryStatus: 'sent' as const, resetUrl };
@@ -251,11 +251,207 @@ const issuePasswordReset = async (user: { id: string; email: string }) => {
       category: 'transactional',
       status: 'failed',
       error: error?.message || 'Failed to send password reset email',
-      metadataJson: JSON.stringify({ resetUrl, resetFallbackUrl }),
+      metadataJson: JSON.stringify({ resetUrl, appUrl }),
     });
     throw error;
   }
 };
+
+router.get('/reset-password', (req: Request, res: Response) => {
+  const token = typeof req.query.token === 'string' ? req.query.token.trim() : '';
+  const appUrl = token ? buildAppDeepLink(`/auth/reset-password?token=${encodeURIComponent(token)}`) : buildAppDeepLink('/auth/reset-password');
+  const apiBaseUrl = buildAbsoluteUrl('/api/v1').replace(/\/+$/, '');
+
+  const html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Сброс пароля | ME·WE·GO</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #fbf5e5;
+      --surface: #ffffff;
+      --text: #171e22;
+      --muted: #6b7280;
+      --accent: #e8336c;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 16px 40px rgba(23, 30, 34, 0.12);
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+    p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 20px 0 24px;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 48px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      text-decoration: none;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0 16px;
+    }
+    .button-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+    .button-secondary {
+      background: white;
+      color: var(--text);
+    }
+    label {
+      display: block;
+      margin: 0 0 8px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+    .hint {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: -8px;
+      margin-bottom: 16px;
+    }
+    .status {
+      margin-top: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .status.error { color: #b91c1c; }
+    .status.success { color: #15803d; }
+    .token-box {
+      margin-top: 16px;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      word-break: break-all;
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Сброс пароля</h1>
+    <p>Если приложение установлено на этом устройстве, откройте форму сброса прямо в приложении. Если нет, задайте новый пароль здесь, в браузере.</p>
+    <div class="actions">
+      <a class="button button-primary" href="${appUrl}">Открыть в приложении</a>
+    </div>
+    <form id="reset-form">
+      <label for="password">Новый пароль</label>
+      <input id="password" name="password" type="password" placeholder="Минимум 8 символов" minlength="8" required />
+      <div class="hint">Пароль должен содержать не меньше 8 символов.</div>
+      <button class="button button-secondary" type="submit">Сохранить новый пароль</button>
+    </form>
+    <div id="status" class="status"></div>
+    ${token ? `<div class="token-box">Token: ${token}</div>` : ''}
+  </div>
+  <script>
+    const token = ${JSON.stringify(token)};
+    const form = document.getElementById('reset-form');
+    const statusNode = document.getElementById('status');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      statusNode.textContent = '';
+      statusNode.className = 'status';
+
+      const passwordInput = document.getElementById('password');
+      const password = passwordInput.value;
+
+      if (!token) {
+        statusNode.textContent = 'В ссылке отсутствует token для сброса пароля.';
+        statusNode.classList.add('error');
+        return;
+      }
+
+      if (!password || password.length < 8) {
+        statusNode.textContent = 'Введите пароль длиной не менее 8 символов.';
+        statusNode.classList.add('error');
+        return;
+      }
+
+      statusNode.textContent = 'Сохраняем новый пароль...';
+
+      try {
+        const response = await fetch('${apiBaseUrl}/auth/password/reset', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token, password }),
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const message = payload && typeof payload.error === 'string'
+            ? payload.error
+            : 'Не удалось обновить пароль.';
+          throw new Error(message);
+        }
+
+        statusNode.textContent = 'Пароль обновлен. Теперь можно войти в приложение с новым паролем.';
+        statusNode.classList.add('success');
+        form.reset();
+      } catch (error) {
+        statusNode.textContent = error instanceof Error ? error.message : 'Не удалось обновить пароль.';
+        statusNode.classList.add('error');
+      }
+    });
+  </script>
+</body>
+</html>`;
+
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(html);
+});
 
 router.post('/register', async (req: Request, res: Response) => {
   try {
