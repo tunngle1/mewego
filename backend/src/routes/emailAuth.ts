@@ -208,7 +208,7 @@ const issuePasswordReset = async (user: { id: string; email: string }) => {
   });
 
   const appUrl = buildAppDeepLink(`/auth/reset-password?token=${encodeURIComponent(token)}`);
-  const resetUrl = buildAbsoluteUrl(`/auth/reset-password?token=${encodeURIComponent(token)}`);
+  const resetUrl = buildAbsoluteUrl(`/api/v1/auth/reset-password?token=${encodeURIComponent(token)}`);
   const message = buildResetPasswordMessage({ resetUrl, appUrl });
 
   if (!isEmailTransportConfigured()) {
