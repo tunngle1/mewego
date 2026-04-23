@@ -46,6 +46,7 @@ export default function MapScreen() {
   const [mapReady, setMapReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState(typeof params.query === 'string' ? params.query : '');
   const [searchingAddress, setSearchingAddress] = useState(false);
+  const [lastGeocodeDebug, setLastGeocodeDebug] = useState('');
 
   const yandexKey = useMemo(() => {
     const k =
@@ -263,6 +264,12 @@ export default function MapScreen() {
   };
 
   const geocodeAddress = async (query: string): Promise<{ latitude: number; longitude: number; address: string } | null> => {
+    const summarizeYandexResponse = (status: number, json: any): string => {
+      const found = json?.response?.GeoObjectCollection?.featureMember;
+      const count = Array.isArray(found) ? found.length : 0;
+      const text = json?.response?.GeoObjectCollection?.metaDataProperty?.GeocoderResponseMetaData?.request ?? query;
+      return `Yandex Geocoder: HTTP ${status}, results=${count}, request="${String(text)}"`;
+    };
     const parseYandexResult = (json: any): { latitude: number; longitude: number; address: string } | null => {
       const member = json?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject;
       const pos = typeof member?.Point?.pos === 'string' ? member.Point.pos.trim() : '';
@@ -285,11 +292,12 @@ export default function MapScreen() {
         )}&format=json&lang=ru_RU&geocode=${encodeURIComponent(query)}&results=1`;
         const res = await fetch(url, { headers: { Accept: 'application/json' } });
         const json = (await res.json()) as any;
+        setLastGeocodeDebug(summarizeYandexResponse(res.status, json));
         const parsed = parseYandexResult(json);
         if (parsed) return parsed;
       }
-    } catch {
-      // fallback below
+    } catch (e) {
+      setLastGeocodeDebug(`Yandex Geocoder error: ${e instanceof Error ? e.message : String(e)}`);
     }
 
     try {
@@ -478,7 +486,7 @@ export default function MapScreen() {
                   try {
                     const result = await geocodeAddress(query);
                     if (!result) {
-                      Alert.alert('Не найдено', 'Не удалось найти адрес. Попробуйте уточнить.');
+                      Alert.alert('Не найдено', `Не удалось найти адрес.\n\n${lastGeocodeDebug || 'Yandex не вернул подходящий результат.'}`);
                       return;
                     }
                     setPickCenter({ latitude: result.latitude, longitude: result.longitude });
@@ -503,7 +511,7 @@ export default function MapScreen() {
                   try {
                     const result = await geocodeAddress(query);
                     if (!result) {
-                      Alert.alert('Не найдено', 'Не удалось найти адрес. Попробуйте уточнить.');
+                      Alert.alert('Не найдено', `Не удалось найти адрес.\n\n${lastGeocodeDebug || 'Yandex не вернул подходящий результат.'}`);
                       return;
                     }
                     setPickCenter({ latitude: result.latitude, longitude: result.longitude });

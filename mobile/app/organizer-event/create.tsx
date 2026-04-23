@@ -134,6 +134,7 @@ export default function OrganizerEventCreateScreen() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [customInviteCode, setCustomInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [lastGeocodeDebug, setLastGeocodeDebug] = useState('');
   const yandexKey = String((Constants.expoConfig?.extra as any)?.yandexMapKitApiKey || (Constants.manifest2 as any)?.extra?.expoClient?.extra?.yandexMapKitApiKey || '').trim();
   const yandexGeocoderKey = String(process.env.EXPO_PUBLIC_YANDEX_GEOCODER_API_KEY || yandexKey || '').trim();
 
@@ -934,6 +935,12 @@ export default function OrganizerEventCreateScreen() {
           }
           setGeocoding(true);
           try {
+            const summarizeYandexResponse = (status: number, json: any): string => {
+              const found = json?.response?.GeoObjectCollection?.featureMember;
+              const count = Array.isArray(found) ? found.length : 0;
+              const text = json?.response?.GeoObjectCollection?.metaDataProperty?.GeocoderResponseMetaData?.request ?? q;
+              return `Yandex Geocoder: HTTP ${status}, results=${count}, request="${String(text)}"`;
+            };
             let lat = NaN;
             let lon = NaN;
             let effectiveQuery = q;
@@ -948,6 +955,7 @@ export default function OrganizerEventCreateScreen() {
                 },
               });
               const yandexJson = (await yandexRes.json()) as any;
+              setLastGeocodeDebug(summarizeYandexResponse(yandexRes.status, yandexJson));
               const member = yandexJson?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject;
               const pos = typeof member?.Point?.pos === 'string' ? member.Point.pos.trim() : '';
               const [lonStr, latStr] = pos.split(/\s+/);
@@ -976,7 +984,7 @@ export default function OrganizerEventCreateScreen() {
             }
 
             if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-              Alert.alert('Не найдено', 'Не удалось найти этот адрес. Попробуйте уточнить.');
+              Alert.alert('Не найдено', `Не удалось найти этот адрес.\n\n${lastGeocodeDebug || 'Yandex не вернул подходящий результат.'}`);
               return;
             }
 
@@ -985,7 +993,8 @@ export default function OrganizerEventCreateScreen() {
             setLocationAddress(effectiveQuery);
             router.push(`/map?mode=pick&centerLat=${lat}&centerLng=${lon}&query=${encodeURIComponent(effectiveQuery)}`);
           } catch (e) {
-            Alert.alert('Ошибка', e instanceof Error ? e.message : 'Не удалось найти адрес');
+            const msg = e instanceof Error ? e.message : 'Не удалось найти адрес';
+            Alert.alert('Ошибка', `${msg}${lastGeocodeDebug ? `\n\n${lastGeocodeDebug}` : ''}`);
           } finally {
             setGeocoding(false);
           }
