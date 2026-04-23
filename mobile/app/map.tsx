@@ -25,6 +25,7 @@ export default function MapScreen() {
   const [pickCenter, setPickCenter] = useState<{ latitude: number; longitude: number } | null>(null);
   const [pickAddress, setPickAddress] = useState<string>('');
   const [mapReady, setMapReady] = useState(false);
+  const [lastTap, setLastTap] = useState<{ ok: boolean; msg: string; at: number } | null>(null);
 
   const yandexKey = useMemo(() => {
     const k =
@@ -292,7 +293,17 @@ export default function MapScreen() {
             ? ({
                 onMapPress: async (e: any) => {
                   const p = extractLatLonFromMapPress(e);
-                  if (!p) return;
+                  if (!p) {
+                    const ne = e?.nativeEvent ?? e;
+                    const keys = ne && typeof ne === 'object' ? Object.keys(ne).slice(0, 10).join(', ') : '';
+                    setLastTap({
+                      ok: false,
+                      msg: `tap received, coords not parsed${keys ? ` (keys: ${keys})` : ''}`,
+                      at: Date.now(),
+                    });
+                    return;
+                  }
+                  setLastTap({ ok: true, msg: `${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}`, at: Date.now() });
                   setPickCenter({ latitude: p.lat, longitude: p.lon });
                   setPickAddress('');
                   const addr = await reverseGeocode(p.lat, p.lon);
@@ -300,7 +311,17 @@ export default function MapScreen() {
                 },
                 onMapLongPress: async (e: any) => {
                   const p = extractLatLonFromMapPress(e);
-                  if (!p) return;
+                  if (!p) {
+                    const ne = e?.nativeEvent ?? e;
+                    const keys = ne && typeof ne === 'object' ? Object.keys(ne).slice(0, 10).join(', ') : '';
+                    setLastTap({
+                      ok: false,
+                      msg: `long tap received, coords not parsed${keys ? ` (keys: ${keys})` : ''}`,
+                      at: Date.now(),
+                    });
+                    return;
+                  }
+                  setLastTap({ ok: true, msg: `${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}`, at: Date.now() });
                   setPickCenter({ latitude: p.lat, longitude: p.lon });
                   setPickAddress('');
                   const addr = await reverseGeocode(p.lat, p.lon);
@@ -378,6 +399,11 @@ export default function MapScreen() {
                   ? `${(pickCenter || pickedLocation)!.latitude.toFixed(6)}, ${(pickCenter || pickedLocation)!.longitude.toFixed(6)}`
                   : 'Тапните по карте…'}
             </Text>
+            {lastTap ? (
+              <Text style={styles.meta}>
+                {lastTap.ok ? `Последний тап: ${lastTap.msg}` : `Последний тап: ${lastTap.msg}`}
+              </Text>
+            ) : null}
           </View>
         </View>
       ) : null}
