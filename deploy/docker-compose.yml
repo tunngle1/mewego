@@ -26,6 +26,8 @@ services:
       AUTH_JWT_EXPIRES_IN: ${AUTH_JWT_EXPIRES_IN:-180d}
       ALLOW_DEV_HEADERS: ${ALLOW_DEV_HEADERS:-false}
       ALLOW_DEV_ROLE_OVERRIDE: ${ALLOW_DEV_ROLE_OVERRIDE:-false}
+      # Test-auth (allows header-based role for controlled testing)
+      TEST_AUTH_KEY: ${TEST_AUTH_KEY:-}
       ENABLE_CRON_JOBS: ${ENABLE_CRON_JOBS:-false}
       # Email (optional)
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-yandex360}
