@@ -175,69 +175,8 @@ export default function MapScreen() {
     </TouchableOpacity>
   );
 
-  if (!yandexKey) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.8}>
-            <Text style={styles.backText}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Карта событий</Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <View style={styles.center}>
-          <Text style={styles.errorTitle}>Карта недоступна</Text>
-          <Text style={styles.errorText}>
-            Не задан ключ Yandex MapKit для текущей сборки.
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!mapModule?.default || !(mapModule as any).Marker) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.8}>
-            <Text style={styles.backText}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Карта событий</Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <View style={styles.center}>
-          <Text style={styles.errorTitle}>Карта доступна только в APK/Dev build</Text>
-          <Text style={styles.errorText}>
-            В Expo Go Yandex MapKit не работает, потому что это нативный модуль.
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!mapReady) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.8}>
-            <Text style={styles.backText}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>{mode === 'pick' ? 'Выбор точки' : 'Карта событий'}</Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <View style={styles.center}>
-          <Text style={styles.errorTitle}>Загрузка карты…</Text>
-          <Text style={styles.errorText}>Инициализируем Yandex MapKit</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const YaMap = mapModule.default;
-  const Marker = (mapModule as any).Marker;
+  const YaMap = mapModule?.default as any;
+  const Marker = (mapModule as any)?.Marker as any;
   const initial = eventsWithCoords[0]?.location.coordinates || { latitude: 55.751244, longitude: 37.618423 };
 
   const initialPick = pickCenter || pickedLocation || paramCenter || initial;
@@ -428,6 +367,67 @@ export default function MapScreen() {
     };
     return walk(e, 0);
   };
+
+  if (!yandexKey) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.8}>
+            <Text style={styles.backText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Карта событий</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <View style={styles.center}>
+          <Text style={styles.errorTitle}>Карта недоступна</Text>
+          <Text style={styles.errorText}>
+            Не задан ключ Yandex MapKit для текущей сборки.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!YaMap || !Marker) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.8}>
+            <Text style={styles.backText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Карта событий</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <View style={styles.center}>
+          <Text style={styles.errorTitle}>Карта доступна только в APK/Dev build</Text>
+          <Text style={styles.errorText}>
+            В Expo Go Yandex MapKit не работает, потому что это нативный модуль.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!mapReady) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.8}>
+            <Text style={styles.backText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>{mode === 'pick' ? 'Выбор точки' : 'Карта событий'}</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <View style={styles.center}>
+          <Text style={styles.errorTitle}>Загрузка карты…</Text>
+          <Text style={styles.errorText}>Инициализируем Yandex MapKit</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
