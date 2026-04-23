@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../src/contexts/ThemeContext';
@@ -29,7 +29,7 @@ const MapMarkerVisual = ({ color, size = 18 }: { color: string; size?: number })
 
 export default function MapScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ mode?: string; centerLat?: string; centerLng?: string }>();
+  const params = useLocalSearchParams<{ mode?: string; centerLat?: string; centerLng?: string; query?: string }>();
   const mode = params.mode === 'pick' ? 'pick' : 'browse';
 
   const { colors, spacing, fontSize, fontWeight, borderRadius, shadows } = useTheme();
@@ -44,7 +44,8 @@ export default function MapScreen() {
   const [pickCenter, setPickCenter] = useState<{ latitude: number; longitude: number } | null>(null);
   const [pickAddress, setPickAddress] = useState<string>('');
   const [mapReady, setMapReady] = useState(false);
-  const [lastTap, setLastTap] = useState<{ ok: boolean; msg: string; at: number } | null>(null);
+  const [searchQuery, setSearchQuery] = useState(typeof params.query === 'string' ? params.query : '');
+  const [searchingAddress, setSearchingAddress] = useState(false);
 
   const yandexKey = useMemo(() => {
     const k =
@@ -225,6 +226,27 @@ export default function MapScreen() {
     }
   };
 
+  const geocodeAddress = async (query: string): Promise<{ latitude: number; longitude: number; address: string } | null> => {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+      const res = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+          'Accept-Language': 'ru',
+        },
+      });
+      const json = (await res.json()) as any[];
+      const item = Array.isArray(json) ? json[0] : null;
+      const latitude = item?.lat ? Number(item.lat) : NaN;
+      const longitude = item?.lon ? Number(item.lon) : NaN;
+      const address = typeof item?.display_name === 'string' ? item.display_name.trim() : query.trim();
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+      return { latitude, longitude, address };
+    } catch {
+      return null;
+    }
+  };
+
   const extractLatLonFromMapPress = (e: any): { lat: number; lon: number } | null => {
     const tryPoint = (c: any): { lat: number; lon: number } | null => {
       if (!c || typeof c !== 'object') return null;
@@ -312,39 +334,25 @@ export default function MapScreen() {
             ? ({
                 onMapPress: async (e: any) => {
                   const p = extractLatLonFromMapPress(e);
-                  if (!p) {
-                    const ne = e?.nativeEvent ?? e;
-                    const keys = ne && typeof ne === 'object' ? Object.keys(ne).slice(0, 10).join(', ') : '';
-                    setLastTap({
-                      ok: false,
-                      msg: `tap received, coords not parsed${keys ? ` (keys: ${keys})` : ''}`,
-                      at: Date.now(),
-                    });
-                    return;
-                  }
-                  setLastTap({ ok: true, msg: `${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}`, at: Date.now() });
+                  if (!p) return;
                   setPickCenter({ latitude: p.lat, longitude: p.lon });
                   setPickAddress('');
                   const addr = await reverseGeocode(p.lat, p.lon);
-                  if (addr) setPickAddress(addr);
+                  if (addr) {
+                    setPickAddress(addr);
+                    setSearchQuery(addr);
+                  }
                 },
                 onMapLongPress: async (e: any) => {
                   const p = extractLatLonFromMapPress(e);
-                  if (!p) {
-                    const ne = e?.nativeEvent ?? e;
-                    const keys = ne && typeof ne === 'object' ? Object.keys(ne).slice(0, 10).join(', ') : '';
-                    setLastTap({
-                      ok: false,
-                      msg: `long tap received, coords not parsed${keys ? ` (keys: ${keys})` : ''}`,
-                      at: Date.now(),
-                    });
-                    return;
-                  }
-                  setLastTap({ ok: true, msg: `${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}`, at: Date.now() });
+                  if (!p) return;
                   setPickCenter({ latitude: p.lat, longitude: p.lon });
                   setPickAddress('');
                   const addr = await reverseGeocode(p.lat, p.lon);
-                  if (addr) setPickAddress(addr);
+                  if (addr) {
+                    setPickAddress(addr);
+                    setSearchQuery(addr);
+                  }
                 },
               } as any)
             : {})}
@@ -387,15 +395,70 @@ export default function MapScreen() {
           <View style={styles.card}>
             <Text style={styles.hintTitle}>Выбор точки</Text>
             <Text style={styles.hintText}>
-              Тапните по карте, чтобы поставить маркер. Нажмите “Выбрать”, чтобы сохранить координаты.
+              Введите адрес или тапните по карте, чтобы поставить маркер. Нажмите “Выбрать”, чтобы сохранить точку.
             </Text>
+
+            <View style={styles.searchRow}>
+              <TextInput
+                style={styles.searchInput}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Введите адрес или место"
+                placeholderTextColor={colors.textMuted}
+                returnKeyType="search"
+                onSubmitEditing={async () => {
+                  const query = searchQuery.trim();
+                  if (!query || searchingAddress) return;
+                  setSearchingAddress(true);
+                  try {
+                    const result = await geocodeAddress(query);
+                    if (!result) {
+                      Alert.alert('Не найдено', 'Не удалось найти адрес. Попробуйте уточнить.');
+                      return;
+                    }
+                    setPickCenter({ latitude: result.latitude, longitude: result.longitude });
+                    setPickAddress(result.address);
+                    setSearchQuery(result.address);
+                  } finally {
+                    setSearchingAddress(false);
+                  }
+                }}
+              />
+              <TouchableOpacity
+                style={[styles.searchBtn, searchingAddress && styles.searchBtnDisabled]}
+                disabled={searchingAddress}
+                activeOpacity={0.9}
+                onPress={async () => {
+                  const query = searchQuery.trim();
+                  if (!query) {
+                    Alert.alert('Адрес', 'Введите адрес или место для поиска.');
+                    return;
+                  }
+                  setSearchingAddress(true);
+                  try {
+                    const result = await geocodeAddress(query);
+                    if (!result) {
+                      Alert.alert('Не найдено', 'Не удалось найти адрес. Попробуйте уточнить.');
+                      return;
+                    }
+                    setPickCenter({ latitude: result.latitude, longitude: result.longitude });
+                    setPickAddress(result.address);
+                    setSearchQuery(result.address);
+                  } finally {
+                    setSearchingAddress(false);
+                  }
+                }}
+              >
+                {searchingAddress ? <ActivityIndicator color={colors.white} /> : <Text style={styles.searchBtnText}>Найти</Text>}
+              </TouchableOpacity>
+            </View>
 
             <View style={[styles.cardActions, { marginTop: 12 }]}>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.actionPrimary]}
                 onPress={() => {
                   const c = pickCenter || pickedLocation || initialPick;
-                  const effectiveAddress = pickAddress || (pickedLocation as any)?.address || '';
+                  const effectiveAddress = pickAddress || searchQuery.trim() || (pickedLocation as any)?.address || '';
                   setPickedLocation({
                     latitude: c.latitude,
                     longitude: c.longitude,
@@ -427,11 +490,6 @@ export default function MapScreen() {
                   ? `${(pickCenter || pickedLocation)!.latitude.toFixed(6)}, ${(pickCenter || pickedLocation)!.longitude.toFixed(6)}`
                   : 'Тапните по карте…'}
             </Text>
-            {lastTap ? (
-              <Text style={styles.meta}>
-                {lastTap.ok ? `Последний тап: ${lastTap.msg}` : `Последний тап: ${lastTap.msg}`}
-              </Text>
-            ) : null}
           </View>
         </View>
       ) : null}
@@ -603,6 +661,42 @@ const createStyles = (
       fontSize: fontSize.sm,
       color: colors.textMuted,
       lineHeight: 20,
+    },
+    searchRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+      alignItems: 'center',
+    },
+    searchInput: {
+      flex: 1,
+      minHeight: 48,
+      backgroundColor: colors.background,
+      borderRadius: borderRadius.xl,
+      paddingHorizontal: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.neutralMuted,
+      color: colors.text,
+      fontSize: fontSize.sm,
+    },
+    searchBtn: {
+      minHeight: 48,
+      minWidth: 88,
+      paddingHorizontal: spacing.md,
+      borderRadius: borderRadius.xl,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    searchBtnDisabled: {
+      opacity: 0.7,
+    },
+    searchBtnText: {
+      color: colors.white,
+      fontSize: fontSize.sm,
+      fontWeight: fontWeight.black,
     },
     card: {
       backgroundColor: colors.white,

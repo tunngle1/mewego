@@ -189,12 +189,12 @@ export default function OrganizerEventCreateScreen() {
     if (!pickedLocation) return;
     setLocationLat(pickedLocation.latitude);
     setLocationLng(pickedLocation.longitude);
-    if (pickedLocation.address && !locationAddress.trim()) {
+    if (pickedLocation.address) {
       setLocationAddress(pickedLocation.address);
     }
     // one-shot: clear after consuming
     setPickedLocation(null);
-  }, [pickedLocation, setPickedLocation, locationAddress]);
+  }, [pickedLocation, setPickedLocation]);
 
   if (editId && !existingEvent && !didPrefill) {
     return (
@@ -949,7 +949,8 @@ export default function OrganizerEventCreateScreen() {
 
             setLocationLat(lat);
             setLocationLng(lon);
-            router.push(`/map?mode=pick&centerLat=${lat}&centerLng=${lon}`);
+            const effectiveQuery = item?.display_name ? String(item.display_name) : q;
+            router.push(`/map?mode=pick&centerLat=${lat}&centerLng=${lon}&query=${encodeURIComponent(effectiveQuery)}`);
           } catch (e) {
             Alert.alert('Ошибка', e instanceof Error ? e.message : 'Не удалось найти адрес');
           } finally {
@@ -963,7 +964,10 @@ export default function OrganizerEventCreateScreen() {
 
       <TouchableOpacity
         style={styles.pickerField}
-        onPress={() => router.push('/map?mode=pick')}
+        onPress={() => {
+          const q = `${locationName || ''} ${locationAddress || ''}`.trim();
+          router.push(q ? `/map?mode=pick&query=${encodeURIComponent(q)}` : '/map?mode=pick');
+        }}
         activeOpacity={0.85}
       >
         <View style={styles.pickerIconWrap}>
