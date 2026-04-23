@@ -174,9 +174,7 @@ const issueEmailVerification = async (
       }).catch(() => {});
       console.error('[EmailAuth] verify email send async error:', error);
     });
-    // We send in background, but to keep older mobile builds happy we report "sent".
-    // Delivery outcome is tracked in email_logs.
-    return { deliveryStatus: 'sent' as const };
+    return { deliveryStatus: 'queued' as const };
   }
 
   try {

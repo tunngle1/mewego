@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import Constants from 'expo-constants';
 import type { EventLocation } from '../types';
 
@@ -13,7 +13,7 @@ const hasFiniteNumber = (value: unknown): value is number =>
 
 const EventMarkerVisual = () => (
   <View style={styles.markerWrap} collapsable={false}>
-    <View style={styles.markerDot} />
+    <Image source={require('../../assets/markers/map-pin.png')} style={styles.markerImage} />
   </View>
 );
 
@@ -105,7 +105,7 @@ export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
           }}
           userLocationIcon={Platform.OS === 'ios' ? undefined : undefined}
         >
-          <Marker point={{ lat: latitude, lon: longitude }} anchor={{ x: 0.5, y: 0.5 }} handled={true}>
+          <Marker point={{ lat: latitude, lon: longitude }} anchor={{ x: 0.5, y: 1 }} handled={true}>
             <EventMarkerVisual />
           </Marker>
         </YaMap>
@@ -129,25 +129,15 @@ const styles = StyleSheet.create({
     height: 220,
   },
   markerWrap: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#E85D75',
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
   },
-  markerDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#FFFFFF',
+  markerImage: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
   },
   fallback: {
     backgroundColor: '#F3F4F6',
