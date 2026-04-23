@@ -208,6 +208,39 @@ export default function MapScreen() {
   const initialPick = pickCenter || pickedLocation || paramCenter || initial;
 
   const reverseGeocode = async (latitude: number, longitude: number) => {
+    const parseYandexResult = (json: any): { latitude: number; longitude: number; address: string } | null => {
+      const member = json?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject;
+      const pos = typeof member?.Point?.pos === 'string' ? member.Point.pos.trim() : '';
+      const address =
+        typeof member?.metaDataProperty?.GeocoderMetaData?.text === 'string'
+          ? member.metaDataProperty.GeocoderMetaData.text.trim()
+          : '';
+      if (!pos) return null;
+      const [lonStr, latStr] = pos.split(/\s+/);
+      const lat = Number(latStr);
+      const lon = Number(lonStr);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+      return {
+        latitude: lat,
+        longitude: lon,
+        address: address || `${lat.toFixed(6)}, ${lon.toFixed(6)}`,
+      };
+    };
+
+    try {
+      if (yandexKey) {
+        const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${encodeURIComponent(
+          yandexKey
+        )}&format=json&lang=ru_RU&geocode=${encodeURIComponent(`${longitude},${latitude}`)}&results=1`;
+        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        const json = (await res.json()) as any;
+        const parsed = parseYandexResult(json);
+        if (parsed?.address) return parsed.address;
+      }
+    } catch {
+      // fallback below
+    }
+
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1&lat=${encodeURIComponent(
         String(latitude)
@@ -219,14 +252,42 @@ export default function MapScreen() {
         },
       });
       const json = (await res.json()) as any;
-      const name = typeof json?.display_name === 'string' ? json.display_name : '';
-      return name;
+      return typeof json?.display_name === 'string' ? json.display_name : '';
     } catch {
       return '';
     }
   };
 
   const geocodeAddress = async (query: string): Promise<{ latitude: number; longitude: number; address: string } | null> => {
+    const parseYandexResult = (json: any): { latitude: number; longitude: number; address: string } | null => {
+      const member = json?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject;
+      const pos = typeof member?.Point?.pos === 'string' ? member.Point.pos.trim() : '';
+      const address =
+        typeof member?.metaDataProperty?.GeocoderMetaData?.text === 'string'
+          ? member.metaDataProperty.GeocoderMetaData.text.trim()
+          : query.trim();
+      if (!pos) return null;
+      const [lonStr, latStr] = pos.split(/\s+/);
+      const lat = Number(latStr);
+      const lon = Number(lonStr);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+      return { latitude: lat, longitude: lon, address };
+    };
+
+    try {
+      if (yandexKey) {
+        const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${encodeURIComponent(
+          yandexKey
+        )}&format=json&lang=ru_RU&geocode=${encodeURIComponent(query)}&results=1`;
+        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        const json = (await res.json()) as any;
+        const parsed = parseYandexResult(json);
+        if (parsed) return parsed;
+      }
+    } catch {
+      // fallback below
+    }
+
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
       const res = await fetch(url, {

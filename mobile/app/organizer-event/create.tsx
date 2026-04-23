@@ -16,6 +16,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { useAppStore } from '../../src/store/useAppStore';
 import { OrganizerPriceType, OrganizerLocationType, EventVisibility } from '../../src/types';
@@ -133,6 +134,7 @@ export default function OrganizerEventCreateScreen() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [customInviteCode, setCustomInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const yandexKey = String((Constants.expoConfig?.extra as any)?.yandexMapKitApiKey || (Constants.manifest2 as any)?.extra?.expoClient?.extra?.yandexMapKitApiKey || '').trim();
 
   React.useEffect(() => {
     if (!editId) return;
@@ -931,17 +933,47 @@ export default function OrganizerEventCreateScreen() {
           }
           setGeocoding(true);
           try {
-            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
-            const res = await fetch(url, {
-              headers: {
-                Accept: 'application/json',
-                'Accept-Language': 'ru',
-              },
-            });
-            const json = (await res.json()) as any[];
-            const item = Array.isArray(json) ? json[0] : null;
-            const lat = item?.lat ? Number(item.lat) : NaN;
-            const lon = item?.lon ? Number(item.lon) : NaN;
+            let lat = NaN;
+            let lon = NaN;
+            let effectiveQuery = q;
+
+            if (yandexKey) {
+              const yandexUrl = `https://geocode-maps.yandex.ru/1.x/?apikey=${encodeURIComponent(
+                yandexKey
+              )}&format=json&lang=ru_RU&geocode=${encodeURIComponent(q)}&results=1`;
+              const yandexRes = await fetch(yandexUrl, {
+                headers: {
+                  Accept: 'application/json',
+                },
+              });
+              const yandexJson = (await yandexRes.json()) as any;
+              const member = yandexJson?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject;
+              const pos = typeof member?.Point?.pos === 'string' ? member.Point.pos.trim() : '';
+              const [lonStr, latStr] = pos.split(/\s+/);
+              lat = Number(latStr);
+              lon = Number(lonStr);
+              if (typeof member?.metaDataProperty?.GeocoderMetaData?.text === 'string') {
+                effectiveQuery = member.metaDataProperty.GeocoderMetaData.text;
+              }
+            }
+
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+              const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+              const res = await fetch(url, {
+                headers: {
+                  Accept: 'application/json',
+                  'Accept-Language': 'ru',
+                },
+              });
+              const json = (await res.json()) as any[];
+              const item = Array.isArray(json) ? json[0] : null;
+              lat = item?.lat ? Number(item.lat) : NaN;
+              lon = item?.lon ? Number(item.lon) : NaN;
+              if (typeof item?.display_name === 'string' && item.display_name.trim()) {
+                effectiveQuery = item.display_name.trim();
+              }
+            }
+
             if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
               Alert.alert('Не найдено', 'Не удалось найти этот адрес. Попробуйте уточнить.');
               return;
@@ -949,7 +981,7 @@ export default function OrganizerEventCreateScreen() {
 
             setLocationLat(lat);
             setLocationLng(lon);
-            const effectiveQuery = item?.display_name ? String(item.display_name) : q;
+            setLocationAddress(effectiveQuery);
             router.push(`/map?mode=pick&centerLat=${lat}&centerLng=${lon}&query=${encodeURIComponent(effectiveQuery)}`);
           } catch (e) {
             Alert.alert('Ошибка', e instanceof Error ? e.message : 'Не удалось найти адрес');
