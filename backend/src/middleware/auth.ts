@@ -157,8 +157,13 @@ export const requireRole = (...roles: string[]) => {
 
     if (!roles.includes(req.auth.role)) {
       const authHeader = req.headers['authorization'];
-      const hasBearer =
-        typeof authHeader === 'string' ? /^Bearer\s+.+/i.test(authHeader) : Array.isArray(authHeader) ? authHeader.some((h) => /^Bearer\s+.+/i.test(String(h))) : false;
+      const authHeaderStr =
+        typeof authHeader === 'string'
+          ? authHeader
+          : Array.isArray(authHeader)
+            ? String(authHeader[0] ?? '')
+            : '';
+      const hasBearer = /^Bearer\s+.+/i.test(authHeaderStr);
 
       const xUserId = req.headers['x-user-id'];
       const xUserRole = req.headers['x-user-role'];
