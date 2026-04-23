@@ -365,6 +365,7 @@ export const useAppStore = create<AppStore>()(
       login: (user) => {
         // Устанавливаем auth context для backend запросов
         api.setAuthContext(user.id, (user.role as 'user' | 'organizer' | 'admin' | 'superadmin') || 'user');
+        // Always prefer real JWT auth over test headers.
         api.setTestAuthKey(null);
         set({ 
           isAuthenticated: true, 
@@ -385,6 +386,8 @@ export const useAppStore = create<AppStore>()(
         } as any;
 
         // For test sessions we intentionally do not rely on backend auth.
+        // Important: clear any real JWT token so backend doesn't ignore header-based test role.
+        api.setToken(null);
         api.setAuthContext(testUser.id, role);
         api.setTestAuthKey(process.env.EXPO_PUBLIC_TEST_AUTH_KEY || null);
         set({
@@ -396,6 +399,7 @@ export const useAppStore = create<AppStore>()(
       
       logout: () => {
         // Очищаем auth context
+        api.setToken(null);
         api.setAuthContext('anonymous', 'user');
         api.setTestAuthKey(null);
         set({ 
