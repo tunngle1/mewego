@@ -675,6 +675,40 @@ const createStyles = (
     color: colors.textMuted,
     marginTop: 2,
   },
+  locationActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  locBtn: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locBtnPrimary: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  locBtnPrimaryText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.black,
+    color: colors.white,
+    textAlign: 'center',
+  },
+  locBtnSecondary: {
+    backgroundColor: colors.white,
+    borderColor: colors.neutralMuted,
+  },
+  locBtnSecondaryText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    textAlign: 'center',
+  },
   descriptionSection: {
     marginBottom: spacing.xl,
   },

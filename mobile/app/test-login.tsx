@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../src/contexts/ThemeContext';
 import { useAppStore } from '../src/store/useAppStore';
+import Constants from 'expo-constants';
 
 type Role = 'user' | 'organizer' | 'admin' | 'superadmin';
 
@@ -21,6 +22,15 @@ export default function TestLoginScreen() {
 
   const [role, setRole] = useState<Role>('user');
   const [name, setName] = useState('');
+  const testKeyPresent = Boolean(process.env.EXPO_PUBLIC_TEST_AUTH_KEY && String(process.env.EXPO_PUBLIC_TEST_AUTH_KEY).trim());
+  const apiUrl = (process.env.EXPO_PUBLIC_API_URL || '').trim();
+  const buildInfo = useMemo(() => {
+    const v =
+      (Constants.expoConfig?.version as string | undefined) ||
+      ((Constants.manifest2 as any)?.extra?.expoClient?.version as string | undefined) ||
+      '';
+    return v ? `v${v}` : '';
+  }, []);
 
   const styles = useMemo(
     () =>
@@ -92,6 +102,15 @@ export default function TestLoginScreen() {
         },
         submitText: { fontSize: fontSize.md, fontWeight: fontWeight.black, color: colors.white },
         note: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18 },
+        warn: {
+          backgroundColor: colors.surfaceMuted,
+          borderRadius: borderRadius.xl,
+          padding: spacing.md,
+          borderWidth: 1,
+          borderColor: colors.neutralMuted,
+        },
+        warnTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.black, color: colors.text },
+        warnText: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 6, lineHeight: 18 },
       }),
     [colors, spacing, fontSize, fontWeight, borderRadius, shadows]
   );
@@ -120,6 +139,20 @@ export default function TestLoginScreen() {
         <View style={styles.card}>
           <Text style={styles.note}>
             Это локальный режим для тестов UI: без регистрации и без проверки токена на backend.
+          </Text>
+
+          {!testKeyPresent ? (
+            <View style={styles.warn}>
+              <Text style={styles.warnTitle}>Внимание: не задан ключ тест‑авторизации</Text>
+              <Text style={styles.warnText}>
+                В этой сборке отсутствует `EXPO_PUBLIC_TEST_AUTH_KEY`. Сервер не примет роль из заголовков, и
+                организаторские действия (создание событий) будут возвращать 403.
+              </Text>
+            </View>
+          ) : null}
+
+          <Text style={styles.note}>
+            {buildInfo ? `${buildInfo} • ` : ''}API: {apiUrl || '(не задано)'} • TestAuthKey: {testKeyPresent ? 'OK' : 'MISSING'}
           </Text>
 
           <Text style={styles.label}>Роль</Text>
