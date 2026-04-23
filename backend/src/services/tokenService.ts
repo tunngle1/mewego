@@ -9,3 +9,9 @@ export const buildAbsoluteUrl = (path: string) => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${baseUrl}${normalizedPath}`;
 };
+
+export const buildAppDeepLink = (path: string) => {
+  const baseUrl = (process.env.APP_MOBILE_URL || 'mewego://').trim().replace(/\/$/, '');
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${baseUrl}${normalizedPath}`;
+};

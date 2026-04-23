@@ -4,7 +4,7 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 import { ensurePublicId } from '../utils/publicId';
 import { buildResetPasswordMessage, buildVerifyEmailMessage, isEmailTransportConfigured, sendEmail } from '../services/emailService';
 import { hashPassword, normalizeEmail, validatePasswordStrength, verifyPassword } from '../services/passwords';
-import { buildAbsoluteUrl, createOpaqueToken, hashOpaqueToken } from '../services/tokenService';
+import { buildAbsoluteUrl, buildAppDeepLink, createOpaqueToken, hashOpaqueToken } from '../services/tokenService';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -207,7 +207,8 @@ const issuePasswordReset = async (user: { id: string; email: string }) => {
     },
   });
 
-  const resetUrl = buildAbsoluteUrl(`/auth/email/reset-password?token=${encodeURIComponent(token)}`);
+  const resetUrl = buildAppDeepLink(`/auth/reset-password?token=${encodeURIComponent(token)}`);
+  const resetFallbackUrl = buildAbsoluteUrl(`/auth/reset-password?token=${encodeURIComponent(token)}`);
   const message = buildResetPasswordMessage({ resetUrl });
 
   if (!isEmailTransportConfigured()) {
@@ -218,7 +219,7 @@ const issuePasswordReset = async (user: { id: string; email: string }) => {
       category: 'transactional',
       status: 'skipped',
       error: 'Email transport is not configured',
-      metadataJson: JSON.stringify({ resetUrl }),
+      metadataJson: JSON.stringify({ resetUrl, resetFallbackUrl }),
     });
     return { deliveryStatus: 'skipped' as const, resetUrl };
   }
@@ -238,7 +239,7 @@ const issuePasswordReset = async (user: { id: string; email: string }) => {
       category: 'transactional',
       status: 'sent',
       providerMessageId: info.messageId || null,
-      metadataJson: JSON.stringify({ resetUrl }),
+      metadataJson: JSON.stringify({ resetUrl, resetFallbackUrl }),
     });
 
     return { deliveryStatus: 'sent' as const, resetUrl };
@@ -250,7 +251,7 @@ const issuePasswordReset = async (user: { id: string; email: string }) => {
       category: 'transactional',
       status: 'failed',
       error: error?.message || 'Failed to send password reset email',
-      metadataJson: JSON.stringify({ resetUrl }),
+      metadataJson: JSON.stringify({ resetUrl, resetFallbackUrl }),
     });
     throw error;
   }

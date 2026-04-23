@@ -1,19 +1,20 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { api, ApiError } from '../../src/services/api';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ token?: string }>();
   const { colors, spacing, fontSize, fontWeight, borderRadius, shadows } = useTheme();
   const styles = useMemo(
     () => createStyles(colors, spacing, fontSize, fontWeight, borderRadius, shadows),
     [colors, spacing, fontSize, fontWeight, borderRadius, shadows]
   );
 
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState(typeof params.token === 'string' ? params.token : '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +57,7 @@ export default function ResetPasswordScreen() {
 
       <View style={styles.content}>
         <Text style={styles.description}>
-          Вставь token из письма и задай новый пароль. Позже мы можем заменить это на полноценный deep link flow.
+          Открой ссылку из письма или вставь token вручную и задай новый пароль.
         </Text>
 
         <Text style={styles.label}>Token</Text>
