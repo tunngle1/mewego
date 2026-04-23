@@ -5,6 +5,7 @@ import { ensurePublicId } from '../utils/publicId';
 
 const router = Router();
 const prisma = new PrismaClient();
+const OCCUPIED_PARTICIPATION_STATUSES = ['joined', 'attended', 'no_show'] as const;
 
 // GET /api/v1/me/ban-appeal - получить заявку на обжалование бана (если есть)
 router.get('/ban-appeal', requireAuth, async (req: Request, res: Response) => {
@@ -134,7 +135,7 @@ router.get('/participations', requireAuth, async (req: Request, res: Response) =
             _count: {
               select: {
                 participations: {
-                  where: { status: 'joined' },
+                  where: { status: { in: [...OCCUPIED_PARTICIPATION_STATUSES] } },
                 },
               },
             },

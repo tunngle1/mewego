@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useTheme } from '../src/contexts/ThemeContext';
 import { api, ApiError } from '../src/services/api';
+import { useAppStore } from '../src/store/useAppStore';
 
 type ParsedQr = { type?: string; eventId?: string; code?: string };
 
@@ -12,6 +13,8 @@ export default function CheckInScreen() {
   const router = useRouter();
   const { eventId, bookingId } = useLocalSearchParams<{ eventId?: string; bookingId?: string }>();
   const { colors, spacing, fontSize, fontWeight, borderRadius, shadows } = useTheme();
+  const updateBookingStatus = useAppStore((s) => s.updateBookingStatus);
+  const fetchMyBookings = useAppStore((s) => s.fetchMyBookings);
   const [permission, requestPermission] = useCameraPermissions();
   const [manualCode, setManualCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -79,6 +82,10 @@ export default function CheckInScreen() {
     setBusy(true);
     try {
       const result = await api.checkInEvent(eventId, payload);
+      if (bookingId) {
+        updateBookingStatus(bookingId, 'attended');
+      }
+      fetchMyBookings().catch(() => {});
       Alert.alert('Готово', result.message || 'Посещение отмечено!', [
         { text: 'OK', onPress: () => router.back() },
       ]);

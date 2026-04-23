@@ -17,6 +17,7 @@ const generateInviteLinkToken = (): string => {
 
 const router = Router();
 const prisma = new PrismaClient();
+const OCCUPIED_PARTICIPATION_STATUSES = ['joined', 'attended', 'no_show'] as const;
 
 const CHECK_IN_BEFORE_START_MINUTES = 30;
 const CHECK_IN_AFTER_END_HOURS = 3;
@@ -118,7 +119,7 @@ router.get('/events', requireAuth, requireRole('organizer', 'admin', 'superadmin
         _count: {
           select: {
             participations: {
-              where: { status: 'joined' },
+              where: { status: { in: [...OCCUPIED_PARTICIPATION_STATUSES] } },
             },
           },
         },
@@ -165,7 +166,7 @@ router.get('/events', requireAuth, requireRole('organizer', 'admin', 'superadmin
 
     const result = events.map((event) => {
       const counts = countsByEventId[event.id] || { joined: 0, attended: 0, canceled: 0, no_show: 0 };
-      const joinedCount = counts.joined;
+      const joinedCount = counts.joined + counts.attended + counts.no_show;
       const attendedCount = counts.attended;
       const canceledCount = counts.canceled;
 
@@ -225,7 +226,7 @@ router.get('/events/:id', requireAuth, requireRole('organizer', 'admin', 'supera
         _count: {
           select: {
             participations: {
-              where: { status: 'joined' },
+              where: { status: { in: [...OCCUPIED_PARTICIPATION_STATUSES] } },
             },
           },
         },
@@ -621,7 +622,7 @@ router.patch('/events/:id', requireAuth, requireRole('organizer', 'admin', 'supe
         _count: {
           select: {
             participations: {
-              where: { status: 'joined' },
+              where: { status: { in: [...OCCUPIED_PARTICIPATION_STATUSES] } },
             },
           },
         },
@@ -640,7 +641,7 @@ router.patch('/events/:id', requireAuth, requireRole('organizer', 'admin', 'supe
     let attendedCount = 0;
     let canceledCount = 0;
     for (const p of participationCounts) {
-      if (p.status === 'joined') joinedCount++;
+      if (p.status === 'joined' || p.status === 'attended' || p.status === 'no_show') joinedCount++;
       if (p.status === 'attended') attendedCount++;
       if (p.status === 'canceled') canceledCount++;
     }
@@ -1314,7 +1315,7 @@ router.get('/:id/events', async (req: Request, res: Response) => {
       },
       include: {
         _count: {
-          select: { participations: { where: { status: 'joined' } } },
+          select: { participations: { where: { status: { in: [...OCCUPIED_PARTICIPATION_STATUSES] } } } },
         },
       },
       orderBy: { startAt: filter === 'past' ? 'desc' : 'asc' },
@@ -1384,7 +1385,7 @@ router.post('/events/:id/finish', requireAuth, requireRole('organizer', 'admin',
       include: {
         _count: {
           select: {
-            participations: { where: { status: 'joined' } },
+            participations: { where: { status: { in: [...OCCUPIED_PARTICIPATION_STATUSES] } } },
           },
         },
       },

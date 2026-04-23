@@ -585,7 +585,7 @@ export const useAppStore = create<AppStore>()(
         return state.bookings.find(
           (b) =>
             b.eventId === eventId &&
-            (b.status === 'pending' || b.status === 'confirmed')
+            (b.status === 'pending' || b.status === 'confirmed' || b.status === 'attended' || b.status === 'no_show')
         );
       },
       
@@ -610,7 +610,8 @@ export const useAppStore = create<AppStore>()(
       createBooking: async (eventId) => {
         set({ bookingsLoading: true, bookingsError: null });
         try {
-          const booking = await api.createBooking(eventId);
+          const fallbackEvent = get().events.find((e) => e.id === eventId);
+          const booking = await api.createBooking(eventId, fallbackEvent);
           set((state) => {
             const events = state.events.map((e) => {
               if (e.id !== eventId) return e;
@@ -627,6 +628,7 @@ export const useAppStore = create<AppStore>()(
               bookingsLoading: false,
             };
           });
+          get().fetchMyBookings().catch(() => {});
           return booking;
         } catch (error) {
           let message = error instanceof Error ? error.message : 'Не удалось записаться на событие';
@@ -655,7 +657,9 @@ export const useAppStore = create<AppStore>()(
             try {
               const bookings = await api.getMyBookings();
               const existing = bookings.find(
-                (b: any) => b.eventId === eventId && (b.status === 'pending' || b.status === 'confirmed')
+                (b: any) =>
+                  b.eventId === eventId &&
+                  (b.status === 'pending' || b.status === 'confirmed' || b.status === 'attended' || b.status === 'no_show')
               );
               set({ bookings, bookingsLoading: false, bookingsError: existing ? null : message });
               return existing || null;

@@ -49,6 +49,8 @@ const getViewerPhase = (params: { now: Date; startAt: Date; endAt: Date }): 'upc
   return 'ended';
 };
 
+const OCCUPIED_PARTICIPATION_STATUSES = ['joined', 'attended', 'no_show'] as const;
+
 const SCHEDULE_GAP_MINUTES = 60;
 const MAX_EVENT_DURATION_HOURS_FALLBACK = 12;
 
@@ -320,7 +322,7 @@ const offerNextInQueue = async (eventId: string) => {
     include: {
       _count: {
         select: {
-          participations: { where: { status: 'joined' } },
+          participations: { where: { status: { in: [...OCCUPIED_PARTICIPATION_STATUSES] } } },
         },
       },
     },
@@ -461,7 +463,7 @@ router.get('/', async (req: Request, res: Response) => {
         _count: {
           select: {
             participations: {
-              where: { status: 'joined' },
+              where: { status: { in: [...OCCUPIED_PARTICIPATION_STATUSES] } },
             },
           },
         },
@@ -526,7 +528,7 @@ router.get('/:id', async (req: Request, res: Response) => {
         _count: {
           select: {
             participations: {
-              where: { status: 'joined' },
+              where: { status: { in: [...OCCUPIED_PARTICIPATION_STATUSES] } },
             },
           },
         },
@@ -581,7 +583,7 @@ router.get('/:id', async (req: Request, res: Response) => {
         select: { status: true },
       });
 
-      if (participation?.status === 'joined') {
+      if (participation && OCCUPIED_PARTICIPATION_STATUSES.includes(participation.status as any)) {
         const endAt = calculateEventEndAt(event.startAt, event.durationMin, event.endAt);
         viewerPhase = getViewerPhase({ now, startAt: event.startAt, endAt });
       }
@@ -618,7 +620,7 @@ router.post('/:id/join', requireAuth, async (req: Request, res: Response) => {
         _count: {
           select: {
             participations: {
-              where: { status: 'joined' },
+              where: { status: { in: [...OCCUPIED_PARTICIPATION_STATUSES] } },
             },
           },
         },
@@ -675,7 +677,7 @@ router.post('/:id/join', requireAuth, async (req: Request, res: Response) => {
       },
     });
 
-    if (existing && existing.status === 'joined') {
+    if (existing && OCCUPIED_PARTICIPATION_STATUSES.includes(existing.status as any)) {
       return res.status(409).json({ error: 'Already joined' });
     }
 
@@ -825,7 +827,7 @@ router.post('/:id/waiting-list', requireAuth, async (req: Request, res: Response
       include: {
         _count: {
           select: {
-            participations: { where: { status: 'joined' } },
+            participations: { where: { status: { in: [...OCCUPIED_PARTICIPATION_STATUSES] } } },
           },
         },
       },
@@ -853,7 +855,7 @@ router.post('/:id/waiting-list', requireAuth, async (req: Request, res: Response
       where: { eventId_userId: { eventId: id, userId } },
     });
 
-    if (existingParticipation && existingParticipation.status === 'joined') {
+    if (existingParticipation && OCCUPIED_PARTICIPATION_STATUSES.includes(existingParticipation.status as any)) {
       return res.status(409).json({ error: 'Already joined this event' });
     }
 
@@ -984,7 +986,7 @@ router.post('/waiting-list/:entryId/accept', requireAuth, async (req: Request, r
         where: { id: entry.eventId },
         include: {
           _count: {
-            select: { participations: { where: { status: 'joined' } } },
+            select: { participations: { where: { status: { in: [...OCCUPIED_PARTICIPATION_STATUSES] } } } },
           },
         },
       });

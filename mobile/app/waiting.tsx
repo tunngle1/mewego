@@ -18,10 +18,9 @@ export default function WaitingScreen() {
     () => createStyles(colors, spacing, fontSize, fontWeight, borderRadius, shadows),
     [colors, spacing, fontSize, fontWeight, borderRadius, shadows]
   );
-  const { eventId, mode, bookingId, waitingEntryId } = useLocalSearchParams<{
+  const { eventId, mode, waitingEntryId } = useLocalSearchParams<{
     eventId: string;
     mode?: 'confirmed' | 'queue' | 'offered';
-    bookingId?: string;
     waitingEntryId?: string;
   }>();
 
@@ -107,13 +106,6 @@ export default function WaitingScreen() {
         },
       ]
     );
-  };
-
-  const handleFinish = () => {
-    router.replace({
-      pathname: '/post-event',
-      params: { eventId: eventId, bookingId },
-    });
   };
 
   const handleGoToProfile = () => {
@@ -237,16 +229,6 @@ export default function WaitingScreen() {
             )}
           </>
         )}
-
-        {/* Dev Toggle (hidden in production) */}
-        <TouchableOpacity
-          onPress={handleFinish}
-          style={styles.devToggle}
-        >
-          <Text style={styles.devToggleText}>
-            [ Симуляция завершения события ]
-          </Text>
-        </TouchableOpacity>
 
         {isQueueMode && (
           <TouchableOpacity

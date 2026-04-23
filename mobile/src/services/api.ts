@@ -591,7 +591,7 @@ class ApiService {
   }
 
   // Bookings (USE_MOCK_BOOKINGS)
-  async createBooking(eventId: string): Promise<Booking> {
+  async createBooking(eventId: string, fallbackEvent?: Event): Promise<Booking> {
     if (USE_MOCK_BOOKINGS) {
       await delay(1000);
       const event = await this.getEvent(eventId);
@@ -608,11 +608,20 @@ class ApiService {
     const participation = await this.request<any>(`/events/${eventId}/join`, {
       method: 'POST',
     });
-    const event = await this.getEvent(eventId);
+    let event = fallbackEvent;
+    if (!event) {
+      event = await this.getEvent(eventId);
+    } else {
+      try {
+        event = await this.getEvent(eventId);
+      } catch {
+        // Keep optimistic event snapshot if the follow-up GET fails.
+      }
+    }
     return {
       id: String(participation.id),
       eventId,
-      event,
+      event: event!,
       userId: String(participation.userId || this.userId || ''),
       status: 'confirmed',
       bookedAt: participation.bookedAt || new Date().toISOString(),

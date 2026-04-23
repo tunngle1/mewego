@@ -68,7 +68,7 @@ export default function BookingsScreen() {
   }, [fetchMyBookings, fetchOrganizerEvents, refreshGamification, canSeeOrganizerFeatures]);
 
   const activeBookings = bookings.filter(
-    (b) => b.status === 'confirmed' || b.status === 'pending'
+    (b) => b.status === 'confirmed' || b.status === 'pending' || b.status === 'attended' || b.status === 'no_show'
   );
 
   const queuedEvents: Event[] = user
@@ -607,15 +607,17 @@ export default function BookingsScreen() {
                     </View>
                   )}
 
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={(e) => {
-                      (e as { stopPropagation?: () => void })?.stopPropagation?.();
-                      handleOpenCancelModal(booking);
-                    }}
-                  >
-                    <Text style={styles.cancelButtonText}>Отменить запись</Text>
-                  </TouchableOpacity>
+                  {(booking.status === 'confirmed' || booking.status === 'pending') && (
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={(e) => {
+                        (e as { stopPropagation?: () => void })?.stopPropagation?.();
+                        handleOpenCancelModal(booking);
+                      }}
+                    >
+                      <Text style={styles.cancelButtonText}>Отменить запись</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </TouchableOpacity>
             ))}
