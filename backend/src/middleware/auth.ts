@@ -156,9 +156,26 @@ export const requireRole = (...roles: string[]) => {
     }
 
     if (!roles.includes(req.auth.role)) {
+      const authHeader = req.headers['authorization'];
+      const hasBearer =
+        typeof authHeader === 'string' ? /^Bearer\s+.+/i.test(authHeader) : Array.isArray(authHeader) ? authHeader.some((h) => /^Bearer\s+.+/i.test(String(h))) : false;
+
+      const xUserId = req.headers['x-user-id'];
+      const xUserRole = req.headers['x-user-role'];
+      const xTestAuth = req.headers['x-test-auth'];
+
       return res.status(403).json({
         error: 'Forbidden',
         message: `Недостаточно прав. Нужна роль: ${roles.join(' или ')}. Сейчас: ${req.auth.role}.`,
+        debug: {
+          resolvedAuth: req.auth,
+          hasBearer,
+          headers: {
+            'x-user-id': typeof xUserId === 'string' ? xUserId : Array.isArray(xUserId) ? xUserId[0] : null,
+            'x-user-role': typeof xUserRole === 'string' ? xUserRole : Array.isArray(xUserRole) ? xUserRole[0] : null,
+            'x-test-auth': typeof xTestAuth === 'string' ? (xTestAuth.trim() ? '[present]' : '[empty]') : Array.isArray(xTestAuth) ? '[present-array]' : null,
+          },
+        },
       });
     }
     next();
