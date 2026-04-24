@@ -7,6 +7,7 @@ import { useAppStore } from '../src/store/useAppStore';
 import { CATEGORY_LABELS, CATEGORY_SLUGS } from '../src/constants';
 import type { Event } from '../src/types';
 import Constants from 'expo-constants';
+import { Asset } from 'expo-asset';
 
 const MAP_PIN_SOURCE = require('../assets/markers/map-pin.png');
 
@@ -38,6 +39,7 @@ export default function MapScreen() {
   const [searchSuggestions, setSearchSuggestions] = useState<AddressSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [lastGeocodeDebug, setLastGeocodeDebug] = useState('');
+  const [markerSource, setMarkerSource] = useState<{ uri: string } | null>(null);
   const isMountedRef = useRef(true);
 
   const yandexKey = useMemo(() => {
@@ -95,6 +97,33 @@ export default function MapScreen() {
 
     setMapReady(true);
   }, [mapModule]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadMarkerAsset = async () => {
+      try {
+        const asset = Asset.fromModule(MAP_PIN_SOURCE);
+        if (!asset.localUri) {
+          await asset.downloadAsync();
+        }
+        const uri = asset.localUri || asset.uri;
+        if (!cancelled && uri) {
+          setMarkerSource({ uri });
+        }
+      } catch {
+        if (!cancelled) {
+          setMarkerSource(null);
+        }
+      }
+    };
+
+    loadMarkerAsset();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (mode !== 'browse') return;
@@ -495,7 +524,7 @@ export default function MapScreen() {
                     onPress={() => setSelectedEvent(e)}
                     handled={true}
                     anchor={{ x: 0.5, y: 1 }}
-                    source={MAP_PIN_SOURCE}
+                    source={markerSource || undefined}
                     scale={0.9}
                   />
                 );
@@ -511,7 +540,7 @@ export default function MapScreen() {
               }}
               handled={true}
               anchor={{ x: 0.5, y: 1 }}
-              source={MAP_PIN_SOURCE}
+              source={markerSource || undefined}
               scale={1}
             />
           ) : null}

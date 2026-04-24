@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import Constants from 'expo-constants';
+import { Asset } from 'expo-asset';
 import type { EventLocation } from '../types';
 
 type Props = {
@@ -18,6 +19,7 @@ export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
   const latitude = coords?.latitude;
   const longitude = coords?.longitude;
   const canRenderMap = hasFiniteNumber(latitude) && hasFiniteNumber(longitude);
+  const [markerSource, setMarkerSource] = React.useState<{ uri: string } | null>(null);
 
   const mapModule = useMemo(() => {
     try {
@@ -54,6 +56,33 @@ export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
       }
     }
   }, [mapModule]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadMarkerAsset = async () => {
+      try {
+        const asset = Asset.fromModule(MAP_PIN_SOURCE);
+        if (!asset.localUri) {
+          await asset.downloadAsync();
+        }
+        const uri = asset.localUri || asset.uri;
+        if (!cancelled && uri) {
+          setMarkerSource({ uri });
+        }
+      } catch {
+        if (!cancelled) {
+          setMarkerSource(null);
+        }
+      }
+    };
+
+    loadMarkerAsset();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!canRenderMap) {
     return (
@@ -101,7 +130,7 @@ export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
           }}
           userLocationIcon={Platform.OS === 'ios' ? undefined : undefined}
         >
-          <Marker point={{ lat: latitude, lon: longitude }} anchor={{ x: 0.5, y: 1 }} handled={true} source={MAP_PIN_SOURCE} scale={0.9} />
+          <Marker point={{ lat: latitude, lon: longitude }} anchor={{ x: 0.5, y: 1 }} handled={true} source={markerSource || undefined} scale={0.9} />
         </YaMap>
       </View>
     </View>
