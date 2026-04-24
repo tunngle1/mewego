@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 import Constants from 'expo-constants';
-import { Asset } from 'expo-asset';
 import type { EventLocation } from '../types';
+import { EVENT_MAP_MARKER_SCALE, loadMapMarkerSource } from '../utils/mapMarker';
 
 type Props = {
   location: EventLocation;
@@ -12,14 +13,12 @@ type Props = {
 const hasFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
-const MAP_PIN_SOURCE = require('../../assets/markers/map-pin.png');
-
 export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
   const coords = location.coordinates;
   const latitude = coords?.latitude;
   const longitude = coords?.longitude;
   const canRenderMap = hasFiniteNumber(latitude) && hasFiniteNumber(longitude);
-  const [markerSource, setMarkerSource] = React.useState<{ uri: string } | null>(null);
+  const [markerSource, setMarkerSource] = React.useState<ImageSourcePropType | null>(null);
 
   const mapModule = useMemo(() => {
     try {
@@ -62,13 +61,9 @@ export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
 
     const loadMarkerAsset = async () => {
       try {
-        const asset = Asset.fromModule(MAP_PIN_SOURCE);
-        if (!asset.localUri) {
-          await asset.downloadAsync();
-        }
-        const uri = asset.localUri || asset.uri;
-        if (!cancelled && uri) {
-          setMarkerSource({ uri });
+        const source = await loadMapMarkerSource();
+        if (!cancelled) {
+          setMarkerSource(source);
         }
       } catch {
         if (!cancelled) {
@@ -106,6 +101,7 @@ export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
 
   const YaMap = mapModule.default;
   const Marker = mapModule.Marker;
+  const markerIconKey = markerSource ? 'custom-marker' : 'default-marker';
 
   return (
     <View style={styles.card}>
@@ -130,7 +126,14 @@ export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
           }}
           userLocationIcon={Platform.OS === 'ios' ? undefined : undefined}
         >
-          <Marker point={{ lat: latitude, lon: longitude }} anchor={{ x: 0.5, y: 1 }} handled={true} source={markerSource || undefined} scale={0.9} />
+          <Marker
+            key={markerIconKey}
+            point={{ lat: latitude, lon: longitude }}
+            anchor={{ x: 0.5, y: 1 }}
+            handled={true}
+            source={markerSource || undefined}
+            scale={markerSource ? EVENT_MAP_MARKER_SCALE : 1}
+          />
         </YaMap>
       </View>
     </View>

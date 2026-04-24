@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, InteractionManager, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../src/contexts/ThemeContext';
@@ -7,9 +8,7 @@ import { useAppStore } from '../src/store/useAppStore';
 import { CATEGORY_LABELS, CATEGORY_SLUGS } from '../src/constants';
 import type { Event } from '../src/types';
 import Constants from 'expo-constants';
-import { Asset } from 'expo-asset';
-
-const MAP_PIN_SOURCE = require('../assets/markers/map-pin.png');
+import { EVENT_MAP_MARKER_SCALE, PICK_MAP_MARKER_SCALE, loadMapMarkerSource } from '../src/utils/mapMarker';
 
 type AddressSuggestion = {
   latitude: number;
@@ -39,7 +38,7 @@ export default function MapScreen() {
   const [searchSuggestions, setSearchSuggestions] = useState<AddressSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [lastGeocodeDebug, setLastGeocodeDebug] = useState('');
-  const [markerSource, setMarkerSource] = useState<{ uri: string } | null>(null);
+  const [markerSource, setMarkerSource] = useState<ImageSourcePropType | null>(null);
   const isMountedRef = useRef(true);
 
   const yandexKey = useMemo(() => {
@@ -103,13 +102,9 @@ export default function MapScreen() {
 
     const loadMarkerAsset = async () => {
       try {
-        const asset = Asset.fromModule(MAP_PIN_SOURCE);
-        if (!asset.localUri) {
-          await asset.downloadAsync();
-        }
-        const uri = asset.localUri || asset.uri;
-        if (!cancelled && uri) {
-          setMarkerSource({ uri });
+        const source = await loadMapMarkerSource();
+        if (!cancelled) {
+          setMarkerSource(source);
         }
       } catch {
         if (!cancelled) {
@@ -189,6 +184,7 @@ export default function MapScreen() {
 
   const YaMap = mapModule?.default as any;
   const Marker = (mapModule as any)?.Marker as any;
+  const markerIconKey = markerSource ? 'custom-marker' : 'default-marker';
   const initial = eventsWithCoords[0]?.location.coordinates || { latitude: 55.751244, longitude: 37.618423 };
 
   const initialPick = pickCenter || pickedLocation || paramCenter || initial;
@@ -519,13 +515,13 @@ export default function MapScreen() {
                 const p = e.location.coordinates!;
                 return (
                   <Marker
-                    key={e.id}
+                    key={`${e.id}-${markerIconKey}`}
                     point={{ lat: p.latitude, lon: p.longitude }}
                     onPress={() => setSelectedEvent(e)}
                     handled={true}
                     anchor={{ x: 0.5, y: 1 }}
                     source={markerSource || undefined}
-                    scale={0.9}
+                    scale={markerSource ? EVENT_MAP_MARKER_SCALE : 1}
                   />
                 );
               })
@@ -533,7 +529,7 @@ export default function MapScreen() {
 
           {mode === 'pick' && (pickCenter || pickedLocation) ? (
             <Marker
-              key={`pick-${(pickCenter || pickedLocation)!.latitude.toFixed(6)}-${(pickCenter || pickedLocation)!.longitude.toFixed(6)}`}
+              key={`pick-${(pickCenter || pickedLocation)!.latitude.toFixed(6)}-${(pickCenter || pickedLocation)!.longitude.toFixed(6)}-${markerIconKey}`}
               point={{
                 lat: (pickCenter || pickedLocation)!.latitude,
                 lon: (pickCenter || pickedLocation)!.longitude,
@@ -541,7 +537,7 @@ export default function MapScreen() {
               handled={true}
               anchor={{ x: 0.5, y: 1 }}
               source={markerSource || undefined}
-              scale={1}
+              scale={markerSource ? PICK_MAP_MARKER_SCALE : 1}
             />
           ) : null}
         </YaMap>
