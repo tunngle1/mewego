@@ -1,4 +1,5 @@
 import { Asset } from 'expo-asset';
+import { File } from 'expo-file-system';
 import { Image, type ImageSourcePropType } from 'react-native';
 
 const MAP_PIN_SOURCE = require('../../assets/markers/map-pin.png');
@@ -16,5 +17,21 @@ export const loadMapMarkerSource = async (): Promise<ImageSourcePropType> => {
   }
 
   const uri = asset.localUri || asset.uri;
-  return uri ? { uri } : MAP_PIN_SOURCE;
+  if (!uri) {
+    return MAP_PIN_SOURCE;
+  }
+
+  try {
+    if (uri.startsWith('file://')) {
+      const file = new File(uri);
+      const base64 = await file.base64();
+      if (base64) {
+        return { uri: `data:image/png;base64,${base64}` };
+      }
+    }
+  } catch {
+    // fallback below
+  }
+
+  return { uri };
 };
