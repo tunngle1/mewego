@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import type { ImageSourcePropType } from 'react-native';
 import Constants from 'expo-constants';
 import type { EventLocation } from '../types';
-import { EVENT_MAP_MARKER_SCALE, loadMapMarkerSource } from '../utils/mapMarker';
 
 type Props = {
   location: EventLocation;
@@ -13,12 +11,81 @@ type Props = {
 const hasFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
+const EventMarkerVisual = ({ markerKey, size = 44 }: { markerKey: string; size?: number }) => {
+  const headSize = Math.round(size * 0.78);
+  const tailSize = Math.round(size * 0.34);
+  const innerSize = Math.round(headSize * 0.7);
+  const tailOffset = Math.round(size * 0.22);
+
+  return (
+    <View
+      key={markerKey}
+      collapsable={false}
+      style={{
+        width: size,
+        height: size + tailOffset,
+        alignItems: 'center',
+      }}
+    >
+      <View
+        style={{
+          width: headSize,
+          height: headSize,
+          borderRadius: headSize / 2,
+          backgroundColor: '#FF4D6D',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2,
+          shadowColor: '#000',
+          shadowOpacity: 0.18,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 3 },
+          elevation: 6,
+        }}
+      >
+        <View
+          style={{
+            width: innerSize,
+            height: innerSize,
+            borderRadius: innerSize / 2,
+            backgroundColor: '#FFF7ED',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text
+            style={{
+              fontSize: Math.round(size * 0.34),
+              fontWeight: '800',
+              color: '#FF4D6D',
+              lineHeight: Math.round(size * 0.36),
+              marginTop: Platform.OS === 'android' ? -1 : 0,
+            }}
+          >
+            M
+          </Text>
+        </View>
+      </View>
+      <View
+        style={{
+          position: 'absolute',
+          top: headSize - tailSize * 0.45,
+          width: tailSize,
+          height: tailSize,
+          backgroundColor: '#FF4D6D',
+          transform: [{ rotate: '45deg' }],
+          borderRadius: Math.max(6, Math.round(size * 0.08)),
+        }}
+      />
+    </View>
+  );
+};
+
 export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
   const coords = location.coordinates;
   const latitude = coords?.latitude;
   const longitude = coords?.longitude;
   const canRenderMap = hasFiniteNumber(latitude) && hasFiniteNumber(longitude);
-  const [markerSource, setMarkerSource] = React.useState<ImageSourcePropType | null>(null);
 
   const mapModule = useMemo(() => {
     try {
@@ -56,29 +123,6 @@ export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
     }
   }, [mapModule]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadMarkerAsset = async () => {
-      try {
-        const source = await loadMapMarkerSource();
-        if (!cancelled) {
-          setMarkerSource(source);
-        }
-      } catch {
-        if (!cancelled) {
-          setMarkerSource(null);
-        }
-      }
-    };
-
-    loadMarkerAsset();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   if (!canRenderMap) {
     return (
       <View style={[styles.card, styles.fallback]}>
@@ -101,7 +145,6 @@ export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
 
   const YaMap = mapModule.default;
   const Marker = mapModule.Marker;
-  const markerIconKey = markerSource ? 'custom-marker' : 'default-marker';
 
   return (
     <View style={styles.card}>
@@ -127,13 +170,13 @@ export const YandexEventMap: React.FC<Props> = ({ location, title }) => {
           userLocationIcon={Platform.OS === 'ios' ? undefined : undefined}
         >
           <Marker
-            key={markerIconKey}
+            key="event-marker"
             point={{ lat: latitude, lon: longitude }}
             anchor={{ x: 0.5, y: 1 }}
             handled={true}
-            source={markerSource || undefined}
-            scale={markerSource ? EVENT_MAP_MARKER_SCALE : 1}
-          />
+          >
+            <EventMarkerVisual markerKey="event-marker-visual" />
+          </Marker>
         </YaMap>
       </View>
     </View>

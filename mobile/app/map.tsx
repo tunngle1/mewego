@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, InteractionManager, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import type { ImageSourcePropType } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../src/contexts/ThemeContext';
@@ -8,12 +7,81 @@ import { useAppStore } from '../src/store/useAppStore';
 import { CATEGORY_LABELS, CATEGORY_SLUGS } from '../src/constants';
 import type { Event } from '../src/types';
 import Constants from 'expo-constants';
-import { EVENT_MAP_MARKER_SCALE, PICK_MAP_MARKER_SCALE, loadMapMarkerSource } from '../src/utils/mapMarker';
 
 type AddressSuggestion = {
   latitude: number;
   longitude: number;
   address: string;
+};
+
+const MapMarkerVisual = ({ size = 40, markerKey }: { size?: number; markerKey: string }) => {
+  const headSize = Math.round(size * 0.78);
+  const tailSize = Math.round(size * 0.34);
+  const innerSize = Math.round(headSize * 0.7);
+  const tailOffset = Math.round(size * 0.22);
+
+  return (
+    <View
+      key={markerKey}
+      collapsable={false}
+      style={{
+        width: size,
+        height: size + tailOffset,
+        alignItems: 'center',
+      }}
+    >
+      <View
+        style={{
+          width: headSize,
+          height: headSize,
+          borderRadius: headSize / 2,
+          backgroundColor: '#FF4D6D',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2,
+          shadowColor: '#000',
+          shadowOpacity: 0.18,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 3 },
+          elevation: 6,
+        }}
+      >
+        <View
+          style={{
+            width: innerSize,
+            height: innerSize,
+            borderRadius: innerSize / 2,
+            backgroundColor: '#FFF7ED',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text
+            style={{
+              fontSize: Math.round(size * 0.34),
+              fontWeight: '800',
+              color: '#FF4D6D',
+              lineHeight: Math.round(size * 0.36),
+              marginTop: Platform.OS === 'android' ? -1 : 0,
+            }}
+          >
+            M
+          </Text>
+        </View>
+      </View>
+      <View
+        style={{
+          position: 'absolute',
+          top: headSize - tailSize * 0.45,
+          width: tailSize,
+          height: tailSize,
+          backgroundColor: '#FF4D6D',
+          transform: [{ rotate: '45deg' }],
+          borderRadius: Math.max(6, Math.round(size * 0.08)),
+        }}
+      />
+    </View>
+  );
 };
 
 export default function MapScreen() {
@@ -38,7 +106,6 @@ export default function MapScreen() {
   const [searchSuggestions, setSearchSuggestions] = useState<AddressSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [lastGeocodeDebug, setLastGeocodeDebug] = useState('');
-  const [markerSource, setMarkerSource] = useState<ImageSourcePropType | null>(null);
   const isMountedRef = useRef(true);
 
   const yandexKey = useMemo(() => {
@@ -96,29 +163,6 @@ export default function MapScreen() {
 
     setMapReady(true);
   }, [mapModule]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadMarkerAsset = async () => {
-      try {
-        const source = await loadMapMarkerSource();
-        if (!cancelled) {
-          setMarkerSource(source);
-        }
-      } catch {
-        if (!cancelled) {
-          setMarkerSource(null);
-        }
-      }
-    };
-
-    loadMarkerAsset();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     if (mode !== 'browse') return;
@@ -184,7 +228,6 @@ export default function MapScreen() {
 
   const YaMap = mapModule?.default as any;
   const Marker = (mapModule as any)?.Marker as any;
-  const markerIconKey = markerSource ? 'custom-marker' : 'default-marker';
   const initial = eventsWithCoords[0]?.location.coordinates || { latitude: 55.751244, longitude: 37.618423 };
 
   const initialPick = pickCenter || pickedLocation || paramCenter || initial;
@@ -515,30 +558,33 @@ export default function MapScreen() {
                 const p = e.location.coordinates!;
                 return (
                   <Marker
-                    key={`${e.id}-${markerIconKey}`}
+                    key={e.id}
                     point={{ lat: p.latitude, lon: p.longitude }}
                     onPress={() => setSelectedEvent(e)}
                     handled={true}
                     anchor={{ x: 0.5, y: 1 }}
-                    source={markerSource || undefined}
-                    scale={markerSource ? EVENT_MAP_MARKER_SCALE : 1}
-                  />
+                  >
+                    <MapMarkerVisual markerKey={`event-${e.id}`} size={44} />
+                  </Marker>
                 );
               })
             : null}
 
           {mode === 'pick' && (pickCenter || pickedLocation) ? (
             <Marker
-              key={`pick-${(pickCenter || pickedLocation)!.latitude.toFixed(6)}-${(pickCenter || pickedLocation)!.longitude.toFixed(6)}-${markerIconKey}`}
+              key={`pick-${(pickCenter || pickedLocation)!.latitude.toFixed(6)}-${(pickCenter || pickedLocation)!.longitude.toFixed(6)}`}
               point={{
                 lat: (pickCenter || pickedLocation)!.latitude,
                 lon: (pickCenter || pickedLocation)!.longitude,
               }}
               handled={true}
               anchor={{ x: 0.5, y: 1 }}
-              source={markerSource || undefined}
-              scale={markerSource ? PICK_MAP_MARKER_SCALE : 1}
-            />
+            >
+              <MapMarkerVisual
+                markerKey={`pick-${(pickCenter || pickedLocation)!.latitude.toFixed(6)}-${(pickCenter || pickedLocation)!.longitude.toFixed(6)}`}
+                size={52}
+              />
+            </Marker>
           ) : null}
         </YaMap>
       </View>
