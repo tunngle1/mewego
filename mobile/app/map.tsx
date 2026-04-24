@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, InteractionManager, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, InteractionManager, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../src/contexts/ThemeContext';
@@ -8,26 +8,7 @@ import { CATEGORY_LABELS, CATEGORY_SLUGS } from '../src/constants';
 import type { Event } from '../src/types';
 import Constants from 'expo-constants';
 
-const MapMarkerVisual = ({ size = 40 }: { size?: number }) => (
-  <View
-    collapsable={false}
-    style={{
-      width: size,
-      height: size,
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-  >
-    <Image
-      source={require('../assets/markers/map-pin.png')}
-      style={{
-        width: size,
-        height: size,
-        resizeMode: 'contain',
-      }}
-    />
-  </View>
-);
+const MAP_PIN_SOURCE = require('../assets/markers/map-pin.png');
 
 type AddressSuggestion = {
   latitude: number;
@@ -514,9 +495,9 @@ export default function MapScreen() {
                     onPress={() => setSelectedEvent(e)}
                     handled={true}
                     anchor={{ x: 0.5, y: 1 }}
-                  >
-                    <MapMarkerVisual size={36} />
-                  </Marker>
+                    source={MAP_PIN_SOURCE}
+                    scale={0.9}
+                  />
                 );
               })
             : null}
@@ -530,9 +511,9 @@ export default function MapScreen() {
               }}
               handled={true}
               anchor={{ x: 0.5, y: 1 }}
-            >
-              <MapMarkerVisual size={42} />
-            </Marker>
+              source={MAP_PIN_SOURCE}
+              scale={1}
+            />
           ) : null}
         </YaMap>
       </View>

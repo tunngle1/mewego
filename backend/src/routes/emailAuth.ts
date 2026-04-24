@@ -365,16 +365,6 @@ router.get('/reset-password', (req: Request, res: Response) => {
     }
     .status.error { color: #b91c1c; }
     .status.success { color: #15803d; }
-    .token-box {
-      margin-top: 16px;
-      padding: 12px;
-      background: #f9fafb;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      word-break: break-all;
-      font-size: 12px;
-      color: var(--muted);
-    }
   </style>
 </head>
 <body>
@@ -391,7 +381,6 @@ router.get('/reset-password', (req: Request, res: Response) => {
       <button class="button button-secondary" type="submit">Сохранить новый пароль</button>
     </form>
     <div id="status" class="status"></div>
-    ${token ? `<div class="token-box">Token: ${token}</div>` : ''}
   </div>
   <script>
     const token = ${JSON.stringify(token)};
