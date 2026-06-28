@@ -16,6 +16,41 @@
       "android": {
         "buildType": "apk"
       }
+    },
+    "testflight": {
+      "distribution": "store",
+      "autoIncrement": true,
+      "env": {
+        "YANDEX_MAPKIT_API_KEY": "8de82d55-7782-43fa-a703-d1fde5a20baf",
+        "EXPO_PUBLIC_API_URL": "https://api.mewego.ru/api/v1",
+        "EXPO_PUBLIC_ENABLE_YANDEX_MAP_MARKERS": "0"
+      },
+      "ios": {
+        "simulator": false
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "autoIncrement": true,
+      "env": {
+        "YANDEX_MAPKIT_API_KEY": "8de82d55-7782-43fa-a703-d1fde5a20baf",
+        "EXPO_PUBLIC_API_URL": "https://api.mewego.ru/api/v1"
+      },
+      "ios": {
+        "simulator": false
+      }
+    }
+  },
+  "submit": {
+    "testflight": {
+      "ios": {
+        "appleTeamId": "2F4QT23AFG"
+      }
+    },
+    "production": {
+      "ios": {
+        "appleTeamId": "2F4QT23AFG"
+      }
     }
   }
 }

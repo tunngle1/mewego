@@ -10,6 +10,9 @@ const markerScaleFor = (targetWidth: number) => Math.min(1, Math.max(0.01, targe
 export const EVENT_MAP_MARKER_SCALE = markerScaleFor(48);
 export const PICK_MAP_MARKER_SCALE = markerScaleFor(56);
 
+/** Sync fallback — always safe to pass as Marker source while async preload runs. */
+export const getMapMarkerSourceSync = (): ImageSourcePropType => MAP_PIN_SOURCE;
+
 export const loadMapMarkerSource = async (): Promise<ImageSourcePropType> => {
   const asset = Asset.fromModule(MAP_PIN_SOURCE);
   if (!asset.localUri) {

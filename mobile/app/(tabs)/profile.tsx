@@ -72,7 +72,7 @@ export default function ProfileScreen() {
     { title: 'Мои уведомления', icon: '🔔', detail: 'Включены', route: '/notifications' },
     { title: 'Подписка', icon: '💳', detail: 'PRO', route: '/profile/subscription' },
     { title: 'Редактировать профиль', icon: '✏️', detail: '', route: '/profile/edit' },
-    { title: 'О приложении', icon: 'ℹ️', detail: 'v1.0.0', route: null },
+    { title: 'О приложении', icon: 'ℹ️', detail: 'v1.0.0', route: '/about' },
   ];
 
   const handleUpgrade = () => {
@@ -155,7 +155,7 @@ export default function ProfileScreen() {
     },
     scrollContent: {
       padding: spacing.lg,
-      paddingBottom: spacing.xxl * 2,
+      paddingBottom: spacing.xxl * 4,
     },
     header: {
       flexDirection: 'row',
@@ -661,7 +661,11 @@ export default function ProfileScreen() {
 
         {/* User Card */}
         <View style={styles.userCard}>
-          <View style={styles.avatarContainer}>
+          <TouchableOpacity
+            style={styles.avatarContainer}
+            onPress={() => router.push('/profile/edit')}
+            activeOpacity={0.85}
+          >
             <View style={styles.avatarBorder}>
               <Image
                 source={{ uri: user?.avatar || 'https://i.pravatar.cc/150?u=me' }}
@@ -673,7 +677,7 @@ export default function ProfileScreen() {
                 <Text style={styles.proBadgeText}>PRO</Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
 
           <Text style={styles.userName}>{user?.name || 'Пользователь'}</Text>
           <Text style={styles.userEmail}>ID: {user?.publicId || '—'}</Text>

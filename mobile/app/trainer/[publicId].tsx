@@ -107,7 +107,12 @@ export default function TrainerPublicProfileScreen() {
       const data = await api.getTrainerProfile(publicId!);
       setProfile(data);
     } catch (e) {
-      setError('Не удалось загрузить профиль');
+      const message = e instanceof Error ? e.message : 'Не удалось загрузить профиль';
+      if (message.includes('404') || message.toLowerCase().includes('not found')) {
+        setError('Публичный профиль организатора не найден на сервере.');
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }

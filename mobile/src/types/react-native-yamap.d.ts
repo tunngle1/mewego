@@ -1,6 +1,6 @@
 declare module 'react-native-yamap' {
   import * as React from 'react';
-  import { ViewProps } from 'react-native';
+  import { ImageSourcePropType, ViewProps } from 'react-native';
 
   export type Region = {
     lat: number;
@@ -27,6 +27,11 @@ declare module 'react-native-yamap' {
 
   export interface MarkerProps {
     point: { lat: number; lon: number };
+    source?: ImageSourcePropType;
+    scale?: number;
+    anchor?: { x: number; y: number };
+    handled?: boolean;
+    children?: React.ReactNode;
   }
 
   export class Marker extends React.Component<MarkerProps> {}
@@ -35,7 +40,7 @@ declare module 'react-native-yamap' {
 
 declare module 'react-native-yamap-plus' {
   import * as React from 'react';
-  import { ViewProps } from 'react-native';
+  import { ImageSourcePropType, ViewProps } from 'react-native';
 
   export type Region = {
     lat: number;
@@ -62,6 +67,11 @@ declare module 'react-native-yamap-plus' {
 
   export interface MarkerProps {
     point: { lat: number; lon: number };
+    source?: ImageSourcePropType;
+    scale?: number;
+    anchor?: { x: number; y: number };
+    handled?: boolean;
+    children?: React.ReactNode;
   }
 
   export class Marker extends React.Component<MarkerProps> {}

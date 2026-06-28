@@ -128,6 +128,7 @@ function RootLayoutContent({ fontsLoaded }: { fontsLoaded: boolean }) {
         <Stack.Screen name="admin-complaint/[id]" />
         <Stack.Screen name="admin-ban-appeal/[id]" />
         <Stack.Screen name="admin-user/[id]" />
+        <Stack.Screen name="trainer/[publicId]" />
         <Stack.Screen name="private-event" />
         <Stack.Screen name="invite/[token]" />
       </Stack>

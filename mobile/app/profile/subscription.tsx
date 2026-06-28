@@ -26,16 +26,27 @@ export default function SubscriptionScreen() {
   // Читаем статус подписки из user.subscription
   const subscription = user?.subscription;
   const subscriptionStatus: SubscriptionStatus = subscription?.isActive
-    ? (subscription.plan as SubscriptionStatus)
-    : 'none';
+    ? subscription.plan === 'trial'
+      ? 'trial'
+      : 'active'
+    : subscription?.plan && subscription.plan !== 'free'
+      ? 'expired'
+      : 'none';
   
   // Вычисляем оставшиеся дни
   const endDate = subscription?.endDate ? new Date(subscription.endDate) : null;
   const now = new Date();
   const daysLeft = endDate ? Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
   
-  const planName = subscription?.plan === 'trial' ? 'Пробный' : subscription?.plan === 'basic' ? 'Basic' : 'Бесплатный';
-  const planPrice = subscription?.isActive ? '349 ₽/мес' : 'Бесплатно';
+  const planName =
+    subscriptionStatus === 'trial'
+      ? 'Пробный доступ'
+      : subscriptionStatus === 'active'
+        ? 'ME·WE·GO PRO'
+        : subscriptionStatus === 'expired'
+          ? 'Подписка истекла'
+          : 'Бесплатный доступ';
+  const planPrice = subscriptionStatus === 'active' ? '349 ₽/мес' : 'Без оплаты';
 
   const handleUpgrade = () => {
     if (process.env.EXPO_PUBLIC_DISABLE_SUBSCRIPTIONS === 'true') {
@@ -49,7 +60,10 @@ export default function SubscriptionScreen() {
   };
 
   const handleRestore = () => {
-    Alert.alert('Восстановление', 'Покупки восстановлены');
+    Alert.alert(
+      'Восстановление покупок',
+      'App Store / Google Play покупки пока не подключены. В тестовой сборке статус подписки синхронизируется через сервер.'
+    );
   };
 
   const handleCancel = () => {
@@ -233,6 +247,13 @@ export default function SubscriptionScreen() {
       marginTop: spacing.lg,
       lineHeight: 18,
     },
+    disabledHint: {
+      fontSize: fontSize.xs,
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginBottom: spacing.md,
+      lineHeight: 18,
+    },
   });
 
   const getStatusLabel = () => {
@@ -309,9 +330,12 @@ export default function SubscriptionScreen() {
           </TouchableOpacity>
         ) : null}
 
-        <TouchableOpacity style={styles.secondaryButton} onPress={handleRestore}>
-          <Text style={styles.secondaryButtonText}>Восстановить покупки</Text>
+        <TouchableOpacity style={styles.secondaryButton} onPress={handleRestore} activeOpacity={0.85}>
+          <Text style={styles.secondaryButtonText}>Как восстановить покупки?</Text>
         </TouchableOpacity>
+        <Text style={styles.disabledHint}>
+          Реальные покупки через App Store / Google Play будут подключены отдельным релизом.
+        </Text>
 
         {subscriptionStatus === 'active' && (
           <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
@@ -320,7 +344,7 @@ export default function SubscriptionScreen() {
         )}
 
         <Text style={styles.note}>
-          Подписка автоматически продлевается. Отменить можно в любой момент в настройках App Store или Google Play.
+          В тестовой версии подписка управляется сервером ME·WE·GO. Магазины приложений пока не списывают оплату.
         </Text>
       </ScrollView>
     </SafeAreaView>

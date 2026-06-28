@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -134,6 +134,8 @@ export default function OrganizerEventCreateScreen() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [customInviteCode, setCustomInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
   const [lastGeocodeDebug, setLastGeocodeDebug] = useState('');
   const yandexKey = String((Constants.expoConfig?.extra as any)?.yandexMapKitApiKey || (Constants.manifest2 as any)?.extra?.expoClient?.extra?.yandexMapKitApiKey || '').trim();
   const yandexGeocoderKey = String(process.env.EXPO_PUBLIC_YANDEX_GEOCODER_API_KEY || yandexKey || '').trim();
@@ -304,15 +306,21 @@ export default function OrganizerEventCreateScreen() {
     if (!validateStep(currentStep)) return;
     if (currentStep < TOTAL_STEPS - 1) {
       setCurrentStep(currentStep + 1);
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     }
   };
 
   const handleBack = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     } else {
       router.back();
     }
+  };
+
+  const scrollToTop = () => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
   };
 
   const handleCreate = async () => {
@@ -712,6 +720,26 @@ export default function OrganizerEventCreateScreen() {
     },
     footerButtonTextNext: {
       color: colors.white,
+    },
+    backToTopButton: {
+      position: 'absolute',
+      right: spacing.xl,
+      bottom: 104,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderRadius: borderRadius.full,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.neutralLight,
+      ...shadows.md,
+    },
+    backToTopText: {
+      fontSize: fontSize.sm,
+      fontWeight: fontWeight.bold,
+      color: colors.text,
     },
     // Preview styles
     previewCard: {
@@ -1263,11 +1291,29 @@ export default function OrganizerEventCreateScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView 
+          ref={scrollViewRef}
           contentContainerStyle={styles.stepContent}
           keyboardShouldPersistTaps="handled"
+          scrollEventThrottle={16}
+          onScroll={(event) => {
+            const y = event.nativeEvent.contentOffset.y;
+            const shouldShow = y > 420;
+            setShowBackToTop((prev) => (prev === shouldShow ? prev : shouldShow));
+          }}
         >
           {renderStepContent()}
         </ScrollView>
+
+        {showBackToTop ? (
+          <TouchableOpacity
+            style={styles.backToTopButton}
+            onPress={scrollToTop}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="arrow-up" size={16} color={colors.text} />
+            <Text style={styles.backToTopText}>В начало</Text>
+          </TouchableOpacity>
+        ) : null}
 
         <View style={styles.footer}>
           {currentStep > 0 && (

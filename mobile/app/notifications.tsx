@@ -5,17 +5,72 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  Alert,
+  Share,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../src/contexts/ThemeContext';
 import { useAppStore } from '../src/store/useAppStore';
 import { Notification } from '../src/types';
+import { notificationService } from '../src/services/notifications';
+import { api } from '../src/services/api';
 
 export default function NotificationsScreen() {
   const router = useRouter();
   const { colors, spacing, fontSize, fontWeight, borderRadius, shadows } = useTheme();
   const { notifications, markNotificationRead } = useAppStore();
+  const [pushToken, setPushToken] = React.useState<string | null>(null);
+  const [pushLoading, setPushLoading] = React.useState(false);
+
+  const handleRequestPush = async () => {
+    setPushLoading(true);
+    try {
+      const token = await notificationService.registerForPushNotifications();
+      if (!token) {
+        Alert.alert('Не получилось', 'Токен не получен. Проверьте разрешения уведомлений и сборку EAS.');
+        return;
+      }
+      setPushToken(token);
+      Alert.alert('Готово', 'Push token получен.');
+    } finally {
+      setPushLoading(false);
+    }
+  };
+
+  const handleShareToken = async () => {
+    if (!pushToken) return;
+    await Share.share({ message: pushToken });
+  };
+
+  const handleTestLocalNotification = async () => {
+    const ok = await notificationService.requestPermissions();
+    if (!ok) {
+      Alert.alert('Нет доступа', 'Разрешите уведомления, чтобы получить тестовое уведомление.');
+      return;
+    }
+    await notificationService.scheduleLocalNotification('ME·WE·GO', 'Тестовое уведомление (через 5 секунд)', 5, {
+      type: 'test',
+    });
+    Alert.alert('Запланировано', 'Локальное уведомление придёт через ~5 секунд.');
+  };
+
+  const handleTestPush = async () => {
+    setPushLoading(true);
+    try {
+      const result = await api.sendTestPush();
+      if (!result?.ok) {
+        Alert.alert('Не получилось', 'Backend не смог отправить push. Проверьте, что токен сохранён в БД.');
+        return;
+      }
+      Alert.alert('Отправлено', 'Backend отправил тестовый push.');
+    } catch (e) {
+      Alert.alert('Ошибка', e instanceof Error ? e.message : 'Не удалось отправить push');
+    } finally {
+      setPushLoading(false);
+    }
+  };
 
   const getIcon = (type: Notification['type']) => {
     switch (type) {
@@ -104,6 +159,66 @@ export default function NotificationsScreen() {
       padding: spacing.lg,
       gap: spacing.md,
     },
+    toolsCard: {
+      backgroundColor: colors.white,
+      borderRadius: borderRadius.xl,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.neutralLight,
+      marginBottom: spacing.md,
+      ...shadows.sm,
+    },
+    toolsTitle: {
+      fontSize: fontSize.md,
+      fontWeight: fontWeight.bold,
+      color: colors.text,
+      marginBottom: spacing.xs,
+    },
+    toolsText: {
+      fontSize: fontSize.xs,
+      color: colors.textMuted,
+      lineHeight: 17,
+      marginBottom: spacing.md,
+    },
+    tokenBox: {
+      backgroundColor: colors.background,
+      borderRadius: borderRadius.lg,
+      padding: spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.neutralMuted,
+      marginBottom: spacing.md,
+    },
+    tokenText: {
+      fontSize: fontSize.xs,
+      color: colors.text,
+    },
+    toolsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    toolsButton: {
+      flexGrow: 1,
+      backgroundColor: colors.accent,
+      borderRadius: borderRadius.lg,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      alignItems: 'center',
+    },
+    toolsButtonSecondary: {
+      backgroundColor: colors.surfaceMuted,
+    },
+    toolsButtonDisabled: {
+      opacity: 0.5,
+    },
+    toolsButtonText: {
+      fontSize: fontSize.xs,
+      fontWeight: fontWeight.bold,
+      color: colors.white,
+    },
+    toolsButtonTextSecondary: {
+      color: colors.text,
+    },
     notificationCard: {
       backgroundColor: colors.white,
       borderRadius: borderRadius.xl,
@@ -148,7 +263,6 @@ export default function NotificationsScreen() {
       color: colors.textMuted,
     },
     emptyContainer: {
-      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       padding: spacing.xxl,
@@ -187,6 +301,38 @@ export default function NotificationsScreen() {
     </TouchableOpacity>
   );
 
+  const renderPushTools = () => (
+    <View style={styles.toolsCard}>
+      <Text style={styles.toolsTitle}>Push-уведомления</Text>
+      <Text style={styles.toolsText}>
+        Используйте эти кнопки для проверки токена и тестовых уведомлений на EAS/TestFlight сборке.
+      </Text>
+      {pushToken ? (
+        <View style={styles.tokenBox}>
+          <Text style={styles.tokenText} selectable>{pushToken}</Text>
+        </View>
+      ) : null}
+      <View style={styles.toolsRow}>
+        <TouchableOpacity style={styles.toolsButton} onPress={handleRequestPush} disabled={pushLoading}>
+          {pushLoading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.toolsButtonText}>Получить токен</Text>}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.toolsButton, styles.toolsButtonSecondary, !pushToken && styles.toolsButtonDisabled]}
+          onPress={handleShareToken}
+          disabled={!pushToken}
+        >
+          <Text style={[styles.toolsButtonText, styles.toolsButtonTextSecondary]}>Поделиться</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.toolsButton, styles.toolsButtonSecondary]} onPress={handleTestLocalNotification}>
+          <Text style={[styles.toolsButtonText, styles.toolsButtonTextSecondary]}>Тест локально</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.toolsButton} onPress={handleTestPush} disabled={pushLoading}>
+          {pushLoading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.toolsButtonText}>Тест push</Text>}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -196,23 +342,23 @@ export default function NotificationsScreen() {
         <Text style={styles.headerTitle}>Уведомления</Text>
       </View>
 
-      {notifications.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>🔔</Text>
-          <Text style={styles.emptyTitle}>Пока пусто</Text>
-          <Text style={styles.emptyText}>
-            Здесь будут уведомления о ваших записях и событиях
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={notifications}
-          renderItem={renderNotification}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      <FlatList
+        data={notifications}
+        renderItem={renderNotification}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={renderPushTools}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyIcon}>🔔</Text>
+            <Text style={styles.emptyTitle}>Пока пусто</Text>
+            <Text style={styles.emptyText}>
+              Здесь будут уведомления о ваших записях и событиях
+            </Text>
+          </View>
+        }
+      />
     </SafeAreaView>
   );
 }

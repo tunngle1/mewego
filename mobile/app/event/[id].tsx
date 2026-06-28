@@ -86,16 +86,23 @@ export default function EventDetailScreen() {
     joinWaitingListAsync,
     leaveWaitingListAsync,
     fetchEventById,
+    fetchMyBookings,
     eventsLoading,
+    bookingsLoading,
   } = useAppStore();
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [coverFailed, setCoverFailed] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (id && !selectedEvent) {
       fetchEventById(id);
     }
-  }, [id, selectedEvent]);
+  }, [id, selectedEvent, fetchEventById]);
+
+  useEffect(() => {
+    fetchMyBookings().catch(() => {});
+  }, [fetchMyBookings]);
 
   const event = useMemo(() => {
     if (selectedEvent?.id === id) return selectedEvent;
@@ -142,27 +149,37 @@ export default function EventDetailScreen() {
   };
 
   const handleJoinWaitingList = async () => {
-    if (!user) return;
+    if (!user || actionLoading) return;
 
+    setActionLoading(true);
     try {
-      await joinWaitingListAsync(event.id);
+      const result = await joinWaitingListAsync(event.id);
+      if (!result) {
+        Alert.alert('Ошибка', 'Не удалось встать в очередь. Попробуйте ещё раз.');
+        return;
+      }
       router.push({
         pathname: '/waiting',
         params: { eventId: event.id, mode: 'queue' },
       });
     } catch (e: any) {
       Alert.alert('Ошибка', e?.message || 'Не удалось встать в очередь');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleLeaveWaitingList = async () => {
-    if (!user) return;
+    if (!user || actionLoading) return;
 
+    setActionLoading(true);
     try {
       await leaveWaitingListAsync(event.id);
       Alert.alert('Готово', 'Вы вышли из очереди.', [{ text: 'Понятно' }]);
     } catch (e: any) {
       Alert.alert('Ошибка', e?.message || 'Не удалось выйти из очереди');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -195,7 +212,8 @@ export default function EventDetailScreen() {
   const canStillCancel = !eventHasStarted || minutesSinceStart <= CANCEL_GRACE_MINUTES;
 
   const handleCancelBooking = async (reason: string, comment?: string) => {
-    if (activeBooking) {
+    if (activeBooking && !actionLoading) {
+      setActionLoading(true);
       try {
         await cancelBookingAsync(activeBooking.id, reason, comment);
         if (eventHasStarted && canStillCancel) {
@@ -208,6 +226,8 @@ export default function EventDetailScreen() {
       } catch (error: any) {
         const message = error?.data?.message || error?.message || 'Не удалось отменить запись';
         Alert.alert('Ошибка', message);
+      } finally {
+        setActionLoading(false);
       }
     }
     setCancelModalVisible(false);
@@ -372,7 +392,9 @@ export default function EventDetailScreen() {
             onPress={() => {
               if (event.instructor.publicId) {
                 router.push(`/trainer/${event.instructor.publicId}`);
+                return;
               }
+              Alert.alert('Профиль недоступен', 'У организатора пока нет публичного профиля.');
             }}
             activeOpacity={event.instructor.publicId ? 0.7 : 1}
           >
@@ -470,6 +492,7 @@ export default function EventDetailScreen() {
                 variant="secondary"
                 size="lg"
                 fullWidth
+                loading={actionLoading || bookingsLoading}
               />
             )}
           </View>
@@ -502,6 +525,7 @@ export default function EventDetailScreen() {
               variant="secondary"
               size="lg"
               fullWidth
+              loading={actionLoading}
             />
           </View>
         ) : event.isFull ? (
@@ -512,6 +536,7 @@ export default function EventDetailScreen() {
               variant="secondary"
               size="lg"
               fullWidth
+              loading={actionLoading}
             />
           ) : (
             <View style={styles.fullNotice}>
@@ -549,6 +574,7 @@ export default function EventDetailScreen() {
             variant="accent"
             size="lg"
             fullWidth
+            disabled={bookingsLoading}
           />
         )}
       </SafeAreaView>

@@ -24,8 +24,18 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
     setError(null);
     try {
-      await api.forgotPassword(email.trim());
-      Alert.alert('Письмо отправлено', 'Если такой email зарегистрирован, мы отправили инструкции по восстановлению пароля.');
+      const result = await api.forgotPassword(email.trim());
+      if (result.deliveryStatus === 'skipped') {
+        Alert.alert(
+          'Письмо не отправлено',
+          'На сервере не настроена отправка email. Обратитесь в поддержку или попробуйте позже.'
+        );
+        return;
+      }
+      Alert.alert(
+        'Проверьте почту',
+        'Если такой email зарегистрирован, мы отправили письмо со ссылкой для сброса пароля. Проверьте папку «Спам».'
+      );
       router.back();
     } catch (err) {
       if (err instanceof ApiError) {

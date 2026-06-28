@@ -186,8 +186,7 @@ export default function AdminUserProfileScreen() {
   const canModifyUser = () => {
     if (!userDetail) return false;
     const targetRole = userDetail.role;
-    if (targetRole === 'superadmin') return isSuperAdmin;
-    if (targetRole === 'admin') return isSuperAdmin;
+    if (targetRole === 'superadmin' || targetRole === 'admin') return false;
     return isAdmin;
   };
 
@@ -423,6 +422,25 @@ export default function AdminUserProfileScreen() {
       alignItems: 'center',
     },
   });
+
+  if (!isAdmin) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backIcon}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Нет доступа</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={{ fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.sm }}>
+            Недостаточно прав
+          </Text>
+          <Text style={{ color: colors.textMuted }}>Экран доступен только администраторам и суперадминам.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (loading) {
     return (

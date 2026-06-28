@@ -212,19 +212,21 @@ export default function AdminUsersScreen() {
       actions.push({ text: 'Заморозить', onPress: () => openFreezeModal(u) });
     }
 
-    actions.push({ text: 'Сбросить прогресс', onPress: () => {
-      Alert.alert('Подтвердите', `Сбросить прогресс ${userName}?`, [
-        { text: 'Отмена', style: 'cancel' },
-        { text: 'Сбросить', style: 'destructive', onPress: () => handleUserAction(u.id, 'reset_progress', userName) },
-      ]);
-    }});
+    if (!isTargetAdmin || isSuperAdmin) {
+      actions.push({ text: 'Сбросить прогресс', onPress: () => {
+        Alert.alert('Подтвердите', `Сбросить прогресс ${userName}?`, [
+          { text: 'Отмена', style: 'cancel' },
+          { text: 'Сбросить', style: 'destructive', onPress: () => handleUserAction(u.id, 'reset_progress', userName) },
+        ]);
+      }});
 
-    actions.push({ text: 'Сбросить подписки', onPress: () => {
-      Alert.alert('Подтвердите', `Сбросить подписки ${userName}?`, [
-        { text: 'Отмена', style: 'cancel' },
-        { text: 'Сбросить', style: 'destructive', onPress: () => handleUserAction(u.id, 'reset_subscriptions', userName) },
-      ]);
-    }});
+      actions.push({ text: 'Сбросить подписки', onPress: () => {
+        Alert.alert('Подтвердите', `Сбросить подписки ${userName}?`, [
+          { text: 'Отмена', style: 'cancel' },
+          { text: 'Сбросить', style: 'destructive', onPress: () => handleUserAction(u.id, 'reset_subscriptions', userName) },
+        ]);
+      }});
+    }
 
     if (isSuperAdmin) {
       actions.push({ text: 'Выдать PRO (пользователь)', onPress: async () => {
@@ -284,7 +286,7 @@ export default function AdminUsersScreen() {
             style: (role === 'superadmin' ? 'destructive' : 'default') as 'destructive' | 'default',
             onPress: async () => {
               if (role === 'superadmin') {
-                Alert.alert('Подтвердите', 'Выдать superadmin права?', [
+                Alert.alert('Подтвердите', 'Выдать права суперадмина?', [
                   { text: 'Отмена', style: 'cancel' },
                   { text: 'Выдать', style: 'destructive', onPress: async () => {
                     const ok = await setAdminUserRoleAsync(u.id, role);
@@ -622,7 +624,7 @@ export default function AdminUsersScreen() {
           <View style={styles.notice}>
             <Text style={styles.noticeTitle}>Нет доступа</Text>
             <Text style={styles.noticeText}>
-              Экран пользователей доступен только для admin/superadmin.
+              Экран пользователей доступен только для администраторов и суперадминов.
             </Text>
           </View>
         </View>
@@ -677,11 +679,17 @@ export default function AdminUsersScreen() {
           </TouchableOpacity>
         </View>
 
-        {adminError ? <Text style={styles.errorText}>{adminError}</Text> : null}
-
         {adminLoading ? (
           <View style={{ paddingVertical: spacing.xxl, alignItems: 'center' }}>
             <ActivityIndicator size="large" color={colors.accent} />
+          </View>
+        ) : adminError ? (
+          <View style={styles.notice}>
+            <Text style={styles.noticeTitle}>Не удалось загрузить пользователей</Text>
+            <Text style={styles.noticeText}>{adminError}</Text>
+            <TouchableOpacity style={styles.searchButton} onPress={handleRefresh} activeOpacity={0.8}>
+              <Text style={styles.searchButtonText}>Повторить</Text>
+            </TouchableOpacity>
           </View>
         ) : users.length > 0 ? (
           users.map(renderUserRow)

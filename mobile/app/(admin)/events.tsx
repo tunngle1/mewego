@@ -45,7 +45,7 @@ export default function AdminEventsScreen() {
     () => createStyles(colors, spacing, fontSize, fontWeight, borderRadius, shadows),
     [colors, spacing, fontSize, fontWeight, borderRadius, shadows]
   );
-  const { getAdminPendingEvents, adminLoading, fetchAdminPendingEvents } = useAppStore();
+  const { getAdminPendingEvents, adminLoading, adminError, fetchAdminPendingEvents } = useAppStore();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -95,7 +95,16 @@ export default function AdminEventsScreen() {
           />
         }
       >
-        {pendingEvents.length > 0 ? (
+        {adminError ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>⚠️</Text>
+            <Text style={styles.emptyTitle}>Не удалось загрузить модерацию</Text>
+            <Text style={styles.emptyText}>{adminError}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={handleRefresh} activeOpacity={0.85}>
+              <Text style={styles.retryButtonText}>Повторить</Text>
+            </TouchableOpacity>
+          </View>
+        ) : pendingEvents.length > 0 ? (
           <View style={styles.eventsList}>
             {pendingEvents.map((event) => (
               <TouchableOpacity
@@ -259,6 +268,18 @@ const createStyles = (
     fontSize: fontSize.sm,
     color: colors.textMuted,
     textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.accent,
+  },
+  retryButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: colors.white,
   },
   loadingContainer: {
     flex: 1,

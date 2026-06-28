@@ -576,6 +576,10 @@ router.post('/verify-email/request', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'email is required' });
     }
 
+    if (!isEmailTransportConfigured()) {
+      return res.json({ ok: true, deliveryStatus: 'skipped' as const });
+    }
+
     const emailNormalized = normalizeEmail(emailRaw);
     const user = await prisma.user.findFirst({ where: { emailNormalized } });
     if (!user?.email) {
@@ -670,6 +674,10 @@ router.post('/password/forgot', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'email is required' });
     }
 
+    if (!isEmailTransportConfigured()) {
+      return res.json({ ok: true, deliveryStatus: 'skipped' as const });
+    }
+
     const emailNormalized = normalizeEmail(emailRaw);
     const user = await prisma.user.findFirst({ where: { emailNormalized } });
     if (user?.email) {
@@ -679,7 +687,9 @@ router.post('/password/forgot', async (req: Request, res: Response) => {
           usedAt: null,
         },
       });
-      await issuePasswordReset({ id: user.id, email: user.email }).catch(() => null);
+      await issuePasswordReset({ id: user.id, email: user.email }).catch((error) => {
+        console.error('[EmailAuth] password reset send error:', error);
+      });
     }
 
     res.json({ ok: true });

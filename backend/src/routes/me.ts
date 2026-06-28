@@ -384,7 +384,15 @@ router.patch('/', requireAuth, async (req: Request, res: Response) => {
     if (lastName !== undefined) updateData.lastName = lastName;
     if (city !== undefined) updateData.cityId = city;
     if (interests !== undefined) updateData.interests = interests;
-    if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
+    if (avatarUrl !== undefined) {
+      if (typeof avatarUrl === 'string' && avatarUrl.length > 1_800_000) {
+        return res.status(413).json({
+          error: 'Avatar too large',
+          message: 'Фото слишком большое. Выберите изображение меньшего размера.',
+        });
+      }
+      updateData.avatarUrl = avatarUrl;
+    }
     if (about !== undefined) updateData.about = about;
     if (gender !== undefined) updateData.gender = gender;
     if (birthDate !== undefined) updateData.birthDate = birthDate ? new Date(birthDate) : null;

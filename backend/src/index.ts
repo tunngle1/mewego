@@ -18,6 +18,7 @@ import { authMiddleware } from './middleware/auth';
 import { startRemindersCron } from './jobs/reminders';
 import { startWaitingListCron } from './jobs/waitingList';
 import { startEventLifecycleCron } from './jobs/eventLifecycle';
+import { isEmailTransportConfigured } from './services/emailService';
 
 dotenv.config();
 
@@ -47,7 +48,11 @@ app.use((req, res, next) => {
 
 // Health check
 app.get('/api/v1/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    emailTransportConfigured: isEmailTransportConfigured(),
+  });
 });
 
 // Auth routes (не требуют авторизации)

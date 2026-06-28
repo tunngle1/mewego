@@ -4,6 +4,14 @@ import { PrismaClient } from '@prisma/client';
 const router = Router();
 const prisma = new PrismaClient();
 
+const PRIVILEGED_ORGANIZER_ROLES = new Set(['organizer', 'admin', 'superadmin']);
+
+async function canShowPublicTrainerProfile(userId: string, role: string): Promise<boolean> {
+  if (PRIVILEGED_ORGANIZER_ROLES.has(role)) return true;
+  const hostedCount = await prisma.event.count({ where: { organizerId: userId } });
+  return hostedCount > 0;
+}
+
 // GET /api/v1/trainers/:publicId - публичный профиль тренера
 router.get('/:publicId', async (req: Request, res: Response) => {
   try {
@@ -25,8 +33,7 @@ router.get('/:publicId', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Trainer not found' });
     }
 
-    // Проверяем, что это организатор
-    if (user.role !== 'organizer' && user.role !== 'admin') {
+    if (!(await canShowPublicTrainerProfile(user.id, user.role))) {
       return res.status(404).json({ error: 'Trainer not found' });
     }
 
@@ -89,7 +96,7 @@ router.get('/:publicId/events', async (req: Request, res: Response) => {
       select: { id: true, role: true },
     });
 
-    if (!user || (user.role !== 'organizer' && user.role !== 'admin')) {
+    if (!user || !(await canShowPublicTrainerProfile(user.id, user.role))) {
       return res.status(404).json({ error: 'Trainer not found' });
     }
 
@@ -150,7 +157,7 @@ router.get('/:publicId/reviews', async (req: Request, res: Response) => {
       select: { id: true, role: true },
     });
 
-    if (!user || (user.role !== 'organizer' && user.role !== 'admin')) {
+    if (!user || !(await canShowPublicTrainerProfile(user.id, user.role))) {
       return res.status(404).json({ error: 'Trainer not found' });
     }
 

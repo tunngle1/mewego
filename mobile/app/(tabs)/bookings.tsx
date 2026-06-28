@@ -305,7 +305,7 @@ export default function BookingsScreen() {
             title="Пока нет событий"
             description="Создайте событие, и оно появится здесь."
             actionLabel="Создать событие"
-            onAction={() => router.push('/(organizer)/dashboard')}
+            onAction={() => router.push('/organizer-event/create')}
           />
         ) : null}
 

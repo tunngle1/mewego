@@ -5,6 +5,7 @@ import { getUserEntitlements } from './subscriptions';
 import { onParticipationAttended, onReviewCreated, onLateCancelAfterStart } from '../services/gamification';
 import { sendPushToUser } from '../services/push';
 import { hashOpaqueToken } from '../services/tokenService';
+import { ensurePublicId } from '../utils/publicId';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -486,6 +487,9 @@ router.get('/', async (req: Request, res: Response) => {
     // Transform to match mobile API contract
     const result = await Promise.all(
       events.map(async (event) => {
+        if (!event.organizer.publicId) {
+          event.organizer.publicId = await ensurePublicId(prisma, event.organizerId);
+        }
         const activeOffersCount = event.capacity ? await getActiveOffersCount(event.id) : 0;
         const effectiveTaken = event._count.participations + activeOffersCount;
 
@@ -537,6 +541,10 @@ router.get('/:id', async (req: Request, res: Response) => {
 
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
+    }
+
+    if (!event.organizer.publicId) {
+      event.organizer.publicId = await ensurePublicId(prisma, event.organizerId);
     }
 
     // Get trainer rating

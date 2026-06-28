@@ -68,14 +68,24 @@ export default function AuthEmailScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pingState, setPingState] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const emailValid = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()), [email]);
-  const passwordValid = useMemo(() => password.length >= 8, [password]);
-  const canSubmit = mode === 'login' ? emailValid && passwordValid : emailValid && passwordValid && name.trim().length >= 2;
+  const normalizedEmail = email.trim().toLowerCase();
+  const nameValid = useMemo(() => {
+    const trimmed = name.trim();
+    return trimmed.length >= 3 && trimmed.length <= 40 && /^[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё\s-]*$/.test(trimmed);
+  }, [name]);
+  const emailValid = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizedEmail), [normalizedEmail]);
+  const passwordValid = useMemo(() => password.length >= 8 && !/\s/.test(password), [password]);
+  const passwordsMatch = mode === 'login' || password === confirmPassword;
+  const canSubmit = mode === 'login'
+    ? emailValid && passwordValid
+    : emailValid && passwordValid && passwordsMatch && nameValid;
 
   const continueAfterAuth = async (userPayload: {
     id: string;
@@ -139,12 +149,20 @@ export default function AuthEmailScreen() {
     setError(null);
     try {
       if (mode === 'login') {
-        const response = await api.loginWithEmail(email.trim(), password);
+        const response = await api.loginWithEmail(normalizedEmail, password);
+        if (response.user?.isEmailVerified === false) {
+          Alert.alert('Подтвердите email', 'Перед входом подтвердите email кодом из письма.');
+          router.push({
+            pathname: '/auth/verify-email',
+            params: { email: normalizedEmail },
+          });
+          return;
+        }
         await continueAfterAuth(response.user);
       } else {
         const effectiveRole = role === 'organizer' ? 'organizer' : 'user';
         const response = await api.registerWithEmail({
-          email: email.trim(),
+          email: normalizedEmail,
           password,
           name: name.trim(),
           role: effectiveRole,
@@ -162,7 +180,7 @@ export default function AuthEmailScreen() {
         }
         router.push({
           pathname: '/auth/verify-email',
-          params: { email: email.trim() },
+          params: { email: normalizedEmail },
         });
       }
     } catch (err) {
@@ -230,19 +248,22 @@ export default function AuthEmailScreen() {
             <>
               <Text style={styles.label}>Имя</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, name.length > 0 && !nameValid && styles.inputInvalid]}
                 placeholder="Как к вам обращаться"
                 placeholderTextColor={colors.textDisabled}
                 autoCapitalize="words"
                 value={name}
                 onChangeText={setName}
               />
+              {name.length > 0 && !nameValid ? (
+                <Text style={styles.validationText}>Имя: 3–40 букв, без цифр и спецсимволов.</Text>
+              ) : null}
             </>
           ) : null}
 
           <Text style={styles.label}>Email</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, email.length > 0 && !emailValid && styles.inputInvalid]}
             placeholder="you@example.com"
             placeholderTextColor={colors.textDisabled}
             autoCapitalize="none"
@@ -252,18 +273,48 @@ export default function AuthEmailScreen() {
             value={email}
             onChangeText={setEmail}
           />
+          {email.length > 0 && !emailValid ? (
+            <Text style={styles.validationText}>Введите корректный email без пробелов.</Text>
+          ) : null}
 
           <Text style={styles.label}>Пароль</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Минимум 8 символов"
-            placeholderTextColor={colors.textDisabled}
-            secureTextEntry
-            autoCapitalize="none"
-            textContentType={mode === 'login' ? 'password' : 'newPassword'}
-            value={password}
-            onChangeText={setPassword}
-          />
+          <View style={[styles.passwordRow, password.length > 0 && !passwordValid && styles.inputInvalid]}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Минимум 8 символов"
+              placeholderTextColor={colors.textDisabled}
+              secureTextEntry={!passwordVisible}
+              autoCapitalize="none"
+              textContentType={mode === 'login' ? 'password' : 'newPassword'}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setPasswordVisible((v) => !v)} style={styles.passwordToggle}>
+              <Text style={styles.passwordToggleText}>{passwordVisible ? 'Скрыть' : 'Показать'}</Text>
+            </TouchableOpacity>
+          </View>
+          {password.length > 0 && !passwordValid ? (
+            <Text style={styles.validationText}>Пароль: минимум 8 символов, без пробелов.</Text>
+          ) : null}
+
+          {mode === 'register' ? (
+            <>
+              <Text style={styles.label}>Повторите пароль</Text>
+              <TextInput
+                style={[styles.input, confirmPassword.length > 0 && !passwordsMatch && styles.inputInvalid]}
+                placeholder="Ещё раз тот же пароль"
+                placeholderTextColor={colors.textDisabled}
+                secureTextEntry={!passwordVisible}
+                autoCapitalize="none"
+                textContentType="newPassword"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
+              {confirmPassword.length > 0 && !passwordsMatch ? (
+                <Text style={styles.validationText}>Пароли не совпадают.</Text>
+              ) : null}
+            </>
+          ) : null}
 
           {mode === 'register' ? (
             <View style={styles.preferenceRow}>
@@ -296,7 +347,7 @@ export default function AuthEmailScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => router.push({ pathname: '/auth/verify-email', params: { email: email.trim() } })}
+            onPress={() => router.push({ pathname: '/auth/verify-email', params: { email: normalizedEmail } })}
             style={styles.linkButton}
           >
             <Text style={styles.linkText}>Подтвердить email или отправить письмо повторно</Text>
@@ -313,18 +364,20 @@ export default function AuthEmailScreen() {
             аккаунт всё равно создастся, а подтверждение можно будет завершить после настройки почтового транспорта.
           </Text>
 
-          <View style={styles.debugCard}>
-            <Text style={styles.debugTitle}>Диагностика API</Text>
-            <Text style={styles.debugText}>Base URL: {getApiBaseUrl()}</Text>
-            <TouchableOpacity onPress={handlePing} style={styles.debugButton} activeOpacity={0.9}>
-              <Text style={styles.debugButtonText}>Проверить /health</Text>
-            </TouchableOpacity>
-            {pingState ? (
-              <Text style={[styles.debugResult, pingState.ok ? styles.debugOk : styles.debugFail]}>
-                {pingState.text}
-              </Text>
-            ) : null}
-          </View>
+          {__DEV__ ? (
+            <View style={styles.debugCard}>
+              <Text style={styles.debugTitle}>Диагностика API</Text>
+              <Text style={styles.debugText}>Base URL: {getApiBaseUrl()}</Text>
+              <TouchableOpacity onPress={handlePing} style={styles.debugButton} activeOpacity={0.9}>
+                <Text style={styles.debugButtonText}>Проверить /health</Text>
+              </TouchableOpacity>
+              {pingState ? (
+                <Text style={[styles.debugResult, pingState.ok ? styles.debugOk : styles.debugFail]}>
+                  {pingState.text}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -415,6 +468,40 @@ const createStyles = (
     borderWidth: 1,
     borderColor: colors.neutralMuted,
     marginBottom: spacing.md,
+  },
+  inputInvalid: {
+    borderColor: colors.error,
+  },
+  validationText: {
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+    fontSize: fontSize.xs,
+    color: colors.error,
+  },
+  passwordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.neutralMuted,
+    marginBottom: spacing.md,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 6,
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
+  passwordToggle: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  passwordToggleText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    color: colors.accent,
   },
   preferenceRow: {
     flexDirection: 'row',

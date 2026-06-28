@@ -88,6 +88,7 @@ export default function SettingsScreen() {
     },
     content: {
       padding: spacing.lg,
+      paddingBottom: spacing.xxl,
     },
     section: {
       marginBottom: spacing.xl,
@@ -131,6 +132,14 @@ export default function SettingsScreen() {
       fontSize: fontSize.md,
       color: colors.text,
     },
+    rowContent: {
+      flex: 1,
+    },
+    rowHint: {
+      fontSize: fontSize.xs,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
     rowArrow: {
       fontSize: fontSize.md,
       color: colors.textMuted,
@@ -149,12 +158,14 @@ export default function SettingsScreen() {
     onPress,
     isLast = false,
     rightElement,
+    hint,
   }: {
     icon: string;
     label: string;
     onPress?: () => void;
     isLast?: boolean;
     rightElement?: React.ReactNode;
+    hint?: string;
   }) => (
     <TouchableOpacity
       style={[styles.row, isLast && styles.rowLast]}
@@ -164,7 +175,10 @@ export default function SettingsScreen() {
     >
       <View style={styles.rowLeft}>
         <Text style={styles.rowIcon}>{icon}</Text>
-        <Text style={styles.rowText}>{label}</Text>
+        <View style={styles.rowContent}>
+          <Text style={styles.rowText}>{label}</Text>
+          {hint ? <Text style={styles.rowHint}>{hint}</Text> : null}
+        </View>
       </View>
       {rightElement || (onPress && <Text style={styles.rowArrow}>→</Text>)}
     </TouchableOpacity>
@@ -186,6 +200,7 @@ export default function SettingsScreen() {
             <SettingRow
               icon="🔔"
               label="Push-уведомления"
+              hint="Локальная настройка, синхронизация с сервером в разработке"
               rightElement={
                 <Switch
                   value={pushEnabled}
@@ -197,6 +212,7 @@ export default function SettingsScreen() {
             <SettingRow
               icon="📧"
               label="Email-рассылка"
+              hint="Включим после подтверждения email и backend-настроек"
               isLast
               rightElement={
                 <Switch
@@ -225,7 +241,7 @@ export default function SettingsScreen() {
             <SettingRow
               icon="🔒"
               label="Приватность"
-              onPress={() => {}}
+              onPress={() => router.push('/legal/privacy')}
               isLast
             />
           </View>
@@ -237,17 +253,17 @@ export default function SettingsScreen() {
             <SettingRow
               icon="❓"
               label="Помощь и FAQ"
-              onPress={() => {}}
+              onPress={() => router.push('/help')}
             />
             <SettingRow
               icon="📝"
               label="Условия использования"
-              onPress={() => {}}
+              onPress={() => router.push('/legal/terms')}
             />
             <SettingRow
               icon="🛡️"
               label="Политика конфиденциальности"
-              onPress={() => {}}
+              onPress={() => router.push('/legal/privacy')}
               isLast
             />
           </View>

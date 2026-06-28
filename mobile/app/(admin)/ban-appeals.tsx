@@ -58,7 +58,7 @@ export default function AdminBanAppealsScreen() {
     () => createStyles(colors, spacing, fontSize, fontWeight, borderRadius, shadows),
     [colors, spacing, fontSize, fontWeight, borderRadius, shadows]
   );
-  const { getAdminBanAppeals, adminLoading, fetchAdminBanAppeals } = useAppStore();
+  const { getAdminBanAppeals, adminLoading, adminError, fetchAdminBanAppeals } = useAppStore();
   const [activeTab, setActiveTab] = useState<TabFilter>('pending');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -122,7 +122,16 @@ export default function AdminBanAppealsScreen() {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />}
       >
-        {filteredAppeals.length > 0 ? (
+        {adminError ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>⚠️</Text>
+            <Text style={styles.emptyTitle}>Не удалось загрузить обжалования</Text>
+            <Text style={styles.emptyText}>{adminError}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={handleRefresh} activeOpacity={0.85}>
+              <Text style={styles.retryButtonText}>Повторить</Text>
+            </TouchableOpacity>
+          </View>
+        ) : filteredAppeals.length > 0 ? (
           <View style={styles.list}>
             {filteredAppeals.map((appeal) => (
               <TouchableOpacity
@@ -157,8 +166,14 @@ export default function AdminBanAppealsScreen() {
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>{activeTab === 'pending' ? '✅' : '📭'}</Text>
-            <Text style={styles.emptyTitle}>Нет заявок</Text>
-            <Text style={styles.emptyText}>Здесь появятся обжалования банов</Text>
+            <Text style={styles.emptyTitle}>
+              {activeTab === 'pending' ? 'Нет заявок на рассмотрении' : 'Нет заявок в этом статусе'}
+            </Text>
+            <Text style={styles.emptyText}>
+              {activeTab === 'pending'
+                ? 'Новые обжалования банов появятся здесь после отправки пользователями.'
+                : 'Попробуйте выбрать другой статус.'}
+            </Text>
           </View>
         )}
       </ScrollView>
@@ -285,6 +300,18 @@ const createStyles = (
     fontSize: fontSize.sm,
     color: colors.textMuted,
     textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.accent,
+  },
+  retryButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: colors.white,
   },
   loadingContainer: {
     flex: 1,

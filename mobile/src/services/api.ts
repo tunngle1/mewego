@@ -31,20 +31,32 @@ export const USE_MOCK_PAYMENT = true;     // Payment остаётся моков
 // Legacy alias для обратной совместимости (постепенно убрать)
 export const USE_MOCK_API = USE_MOCK_EVENTS;
 
+const PRODUCTION_API_BASE_URL = 'https://api.mewego.ru/api/v1';
+const READ_REQUEST_TIMEOUT_MS = 15000;
+const MUTATION_REQUEST_TIMEOUT_MS = 45000;
+
+type ApiRequestOptions = RequestInit & {
+  timeoutMs?: number;
+};
+
 const resolveApiBaseUrl = () => {
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
   const hasEnvUrl = typeof envUrl === 'string' && envUrl.trim().length > 0;
-
-  // Android emulator should always use 10.0.2.2 for host machine.
-  // This must override envUrl, otherwise emulator will try to use LAN IP and fail.
-  if (Platform.OS === 'android' && Constants.isDevice === false) {
-    return 'http://10.0.2.2:3000/api/v1';
-  }
 
   // If a URL is explicitly provided via .env, prefer it.
   // (Use LAN IP here for physical devices.)
   if (hasEnvUrl) {
     return envUrl.trim();
+  }
+
+  // TestFlight/App Store builds should never fall back to localhost/127.0.0.1.
+  if (!__DEV__) {
+    return PRODUCTION_API_BASE_URL;
+  }
+
+  // Android emulator should always use 10.0.2.2 for host machine.
+  if (Platform.OS === 'android' && Constants.isDevice === false) {
+    return 'http://10.0.2.2:3000/api/v1';
   }
 
   // Android fallback
@@ -57,6 +69,10 @@ const resolveApiBaseUrl = () => {
 };
 
 const getDevApiBaseUrlCandidates = () => {
+  if (!__DEV__) {
+    return [API_BASE_URL];
+  }
+
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
   const debuggerHost =
     typeof Constants.expoConfig?.hostUri === 'string' && Constants.expoConfig.hostUri
@@ -78,6 +94,10 @@ const getDevApiBaseUrlCandidates = () => {
 };
 
 let API_BASE_URL = resolveApiBaseUrl();
+
+const DEBUG_NETWORK_LOG =
+  typeof process.env.EXPO_PUBLIC_DEBUG_NETWORK_LOG === 'string' &&
+  ['1', 'true', 'yes'].includes(process.env.EXPO_PUBLIC_DEBUG_NETWORK_LOG.trim().toLowerCase());
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -289,10 +309,16 @@ class ApiService {
     this.testAuthKey = v ? v : null;
   }
 
+  private logDebugNetwork(method: string, url: string, detail: string) {
+    if (!DEBUG_NETWORK_LOG) return;
+    console.log(`[MEWEGO][NET] ${method} ${url} ${detail}`);
+  }
+
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: ApiRequestOptions = {}
   ): Promise<T> {
+    const { timeoutMs: explicitTimeoutMs, ...fetchOptions } = options;
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...(this.token && { Authorization: `Bearer ${this.token}` }),
@@ -305,7 +331,9 @@ class ApiService {
     const method = String(options.method || 'GET').toUpperCase();
     const shouldRetry = method === 'GET' || method === 'HEAD';
     const maxAttempts = shouldRetry ? 3 : 1;
-    const timeoutMs = 15000;
+    const timeoutMs =
+      explicitTimeoutMs ??
+      (shouldRetry ? READ_REQUEST_TIMEOUT_MS : MUTATION_REQUEST_TIMEOUT_MS);
 
     const baseUrls = shouldRetry ? getDevApiBaseUrlCandidates() : [API_BASE_URL];
     let response: Response | null = null;
@@ -321,7 +349,7 @@ class ApiService {
         const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
         try {
           response = await fetch(url, {
-            ...options,
+            ...fetchOptions,
             headers,
             signal: controller.signal,
           });
@@ -348,8 +376,16 @@ class ApiService {
     }
 
     if (lastError && !response) {
+      this.logDebugNetwork(method, lastTriedUrl, '-> NETWORK_ERROR');
       const message = lastError instanceof Error ? lastError.message : String(lastError);
-      throw new Error(`Network request failed (${timeoutMs}ms): ${message}. URL: ${lastTriedUrl}`);
+      const isAbort =
+        lastError instanceof Error &&
+        (lastError.name === 'AbortError' || message.toLowerCase().includes('aborted'));
+      const seconds = Math.round(timeoutMs / 1000);
+      const humanMessage = isAbort
+        ? `Сервер не ответил за ${seconds} сек. Проверьте соединение и попробуйте ещё раз.`
+        : `Не удалось выполнить запрос: ${message}`;
+      throw new Error(`${humanMessage} URL: ${lastTriedUrl}`);
     }
 
     if (!response) {
@@ -357,6 +393,7 @@ class ApiService {
     }
 
     if (!response.ok) {
+      this.logDebugNetwork(method, lastTriedUrl, `-> HTTP_${response.status}`);
       const contentType = response.headers.get('content-type') || '';
       let data: unknown = null;
       try {
@@ -384,6 +421,8 @@ class ApiService {
           : formatJsonError(data as any) || `API Error: ${response.status}`;
       throw new ApiError(response.status, message, data);
     }
+
+    this.logDebugNetwork(method, lastTriedUrl, `-> ${response.status}`);
 
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
@@ -463,8 +502,8 @@ class ApiService {
     return result;
   }
 
-  async forgotPassword(email: string): Promise<{ ok: true }> {
-    return this.request<{ ok: true }>('/auth/password/forgot', {
+  async forgotPassword(email: string): Promise<{ ok: true; deliveryStatus?: 'skipped' }> {
+    return this.request<{ ok: true; deliveryStatus?: 'skipped' }>('/auth/password/forgot', {
       method: 'POST',
       body: JSON.stringify({ email }),
     });

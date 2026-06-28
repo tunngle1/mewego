@@ -7,6 +7,15 @@ import { useAppStore } from '../../src/store/useAppStore';
 import { api } from '../../src/services/api';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
+const MIN_AGE = 14;
+const MAX_AGE = 100;
+
+const addYears = (date: Date, years: number) => {
+  const next = new Date(date);
+  next.setFullYear(next.getFullYear() + years);
+  return next;
+};
+
 export default function AuthBirthdateScreen() {
   const router = useRouter();
   const { role } = useLocalSearchParams<{ role?: string }>();
@@ -17,9 +26,8 @@ export default function AuthBirthdateScreen() {
 
   const isValid = useMemo(() => {
     if (!selectedDate) return false;
-    const yyyy = selectedDate.getFullYear();
-    if (yyyy < 1900 || yyyy > new Date().getFullYear()) return false;
-    return true;
+    const today = new Date();
+    return selectedDate <= addYears(today, -MIN_AGE) && selectedDate >= addYears(today, -MAX_AGE);
   }, [selectedDate]);
 
   const formattedDate = useMemo(() => {
@@ -195,11 +203,12 @@ export default function AuthBirthdateScreen() {
             value={selectedDate || new Date(2000, 0, 1)}
             mode="date"
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            maximumDate={new Date()}
+            maximumDate={addYears(new Date(), -MIN_AGE)}
+            minimumDate={addYears(new Date(), -MAX_AGE)}
             onChange={handlePickerChange}
           />
         )}
-        <Text style={styles.hint}>Выберите дату рождения в календаре</Text>
+        <Text style={styles.hint}>Продолжить можно с {MIN_AGE} лет. Укажите реальную дату рождения.</Text>
 
         <TouchableOpacity
           style={[styles.button, !isValid && styles.buttonDisabled]}

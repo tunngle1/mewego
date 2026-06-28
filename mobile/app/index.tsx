@@ -153,9 +153,7 @@ export default function Index() {
   const target =
     user.role === 'superadmin' || user.role === 'admin'
       ? '/(admin)/dashboard'
-      : user.role === 'organizer'
-        ? '/(organizer)/dashboard'
-        : '/(tabs)/explore';
+      : '/(tabs)/explore';
 
   return <Redirect href={target as any} />;
 }

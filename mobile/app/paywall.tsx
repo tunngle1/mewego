@@ -19,23 +19,23 @@ import { SUBSCRIPTION_PRICES } from '../src/constants';
 const FEATURES = [
   {
     icon: '👥',
-    title: 'Персональный куратор',
-    description: 'Поможет выбрать направление и держать регулярность.',
+    title: 'Очередь ожидания',
+    description: 'Встаньте в очередь на заполненные события и получите уведомление о свободном месте.',
   },
   {
-    icon: '🛡️',
-    title: 'Страховка старта',
-    description: 'Возвращаем 50% стоимости, если вы не пришли из-за тревоги.',
+    icon: '🎯',
+    title: 'Челленджи',
+    description: 'Участвуйте в заданиях и отслеживайте прогресс.',
   },
   {
-    icon: '🔑',
-    title: 'Секретные группы',
-    description: 'Доступ к камерным встречам только "для своих".',
+    icon: '📊',
+    title: 'Расширенная статистика',
+    description: 'Смотрите активность и историю участия.',
   },
   {
     icon: '🔔',
-    title: 'Очередь на события',
-    description: 'Встаньте в очередь на заполненные события и получите уведомление о свободном месте.',
+    title: 'Умные напоминания',
+    description: 'Получайте своевременные подсказки о событиях.',
   },
 ];
 
@@ -79,6 +79,7 @@ export default function PaywallScreen() {
       router.back();
     } catch (error) {
       console.error('Subscription error:', error);
+      Alert.alert('Ошибка', error instanceof Error ? error.message : 'Не удалось оформить подписку');
     } finally {
       setLoading(false);
     }
@@ -129,7 +130,7 @@ export default function PaywallScreen() {
             <Badge label="Хит" variant="accent" size="sm" />
           </View>
           <Text style={styles.pricingDescription}>
-            Все функции поддержки + 1 событие в подарок
+            Тестовый backend-доступ без списания через магазин приложений
           </Text>
           <View style={styles.priceRow}>
             <Text style={styles.price}>{SUBSCRIPTION_PRICES.basic} ₽</Text>
@@ -148,7 +149,7 @@ export default function PaywallScreen() {
         />
 
         <Text style={styles.disclaimer}>
-          БЕЗОПАСНАЯ ОПЛАТА • ОТМЕНА В ЛЮБОЙ МОМЕНТ
+          TESTFLIGHT: ОПЛАТА ЧЕРЕЗ APP STORE ПОКА НЕ ПОДКЛЮЧЕНА
         </Text>
       </ScrollView>
     </SafeAreaView>

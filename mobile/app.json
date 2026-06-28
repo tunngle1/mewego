@@ -35,6 +35,8 @@
       "@react-native-community/datetimepicker",
       "./plugins/withYandexMaps",
       "./plugins/withAndroidNoAutoBackup.js",
+      "./plugins/withAndroidDebugProxyTrust.js",
+      "./plugins/withAndroidEmbedBundleInDebug.js",
       [
         "expo-build-properties",
         {

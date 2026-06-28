@@ -9,6 +9,8 @@ const config: ExpoConfig = {
     infoPlist: {
       ...((((base.expo && base.expo.ios && (base.expo.ios as any).infoPlist) as Record<string, unknown>) || {})),
       ITSAppUsesNonExemptEncryption: false,
+      NSLocationWhenInUseUsageDescription:
+        'MeWeGo uses your location to show nearby events and improve recommendations.',
     },
   },
   plugins: [

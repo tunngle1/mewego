@@ -26,7 +26,6 @@ export default function AdminDashboard() {
   );
   const { 
     user, 
-    logout, 
     getAdminPendingEvents, 
     getAdminOpenComplaints,
     getAdminPendingBanAppeals,
@@ -73,11 +72,6 @@ export default function AdminDashboard() {
     }, [refreshData])
   );
 
-  const handleLogout = () => {
-    logout();
-    router.replace('/auth');
-  };
-
   const stats = [
     { 
       label: 'На модерации', 
@@ -115,9 +109,9 @@ export default function AdminDashboard() {
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Привет, {user?.name?.split(' ')[0]} 🛡️</Text>
-            <Text style={styles.subtitle}>Панель администратора</Text>
+            <Text style={styles.subtitle}>{isSuperAdmin ? 'Панель суперадмина' : 'Панель администратора'}</Text>
           </View>
-          <TouchableOpacity onPress={handleLogout}>
+          <TouchableOpacity onPress={() => router.push('/profile/edit')} activeOpacity={0.85}>
             <Avatar source={user?.avatar} size={48} />
           </TouchableOpacity>
         </View>
@@ -353,11 +347,11 @@ export default function AdminDashboard() {
         <View style={styles.infoCard}>
           <Text style={styles.infoEmoji}>🛡️</Text>
           <View style={styles.infoContent}>
-            <Text style={styles.infoTitle}>{user?.role === 'superadmin' ? 'SuperAdmin' : 'Admin'}</Text>
+            <Text style={styles.infoTitle}>{user?.role === 'superadmin' ? 'Суперадмин' : 'Администратор'}</Text>
             <Text style={styles.infoText}>
               {user?.role === 'superadmin' 
-                ? 'Полный доступ: модерация, управление ролями, удаление пользователей.'
-                : 'Модерация событий, жалоб, управление пользователями (кроме ролей и удаления).'}
+                ? 'Полный доступ: модерация, управление ролями, удаление пользователей и аналитика.'
+                : 'Модерация событий и жалоб, управление пользователями без ролей, удаления и аналитики.'}
             </Text>
           </View>
         </View>

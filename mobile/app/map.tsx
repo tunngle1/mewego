@@ -7,81 +7,18 @@ import { useAppStore } from '../src/store/useAppStore';
 import { CATEGORY_LABELS, CATEGORY_SLUGS } from '../src/constants';
 import type { Event } from '../src/types';
 import Constants from 'expo-constants';
+import { initYamapInstance } from '../src/utils/yamap';
+import {
+  EVENT_MAP_MARKER_SCALE,
+  getMapMarkerSourceSync,
+  PICK_MAP_MARKER_SCALE,
+  loadMapMarkerSource,
+} from '../src/utils/mapMarker';
 
 type AddressSuggestion = {
   latitude: number;
   longitude: number;
   address: string;
-};
-
-const MapMarkerVisual = ({ size = 40, markerKey }: { size?: number; markerKey: string }) => {
-  const headSize = Math.round(size * 0.78);
-  const tailSize = Math.round(size * 0.34);
-  const innerSize = Math.round(headSize * 0.7);
-  const tailOffset = Math.round(size * 0.22);
-
-  return (
-    <View
-      key={markerKey}
-      collapsable={false}
-      style={{
-        width: size,
-        height: size + tailOffset,
-        alignItems: 'center',
-      }}
-    >
-      <View
-        style={{
-          width: headSize,
-          height: headSize,
-          borderRadius: headSize / 2,
-          backgroundColor: '#FF4D6D',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2,
-          shadowColor: '#000',
-          shadowOpacity: 0.18,
-          shadowRadius: 6,
-          shadowOffset: { width: 0, height: 3 },
-          elevation: 6,
-        }}
-      >
-        <View
-          style={{
-            width: innerSize,
-            height: innerSize,
-            borderRadius: innerSize / 2,
-            backgroundColor: '#FFF7ED',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Text
-            style={{
-              fontSize: Math.round(size * 0.34),
-              fontWeight: '800',
-              color: '#FF4D6D',
-              lineHeight: Math.round(size * 0.36),
-              marginTop: Platform.OS === 'android' ? -1 : 0,
-            }}
-          >
-            M
-          </Text>
-        </View>
-      </View>
-      <View
-        style={{
-          position: 'absolute',
-          top: headSize - tailSize * 0.45,
-          width: tailSize,
-          height: tailSize,
-          backgroundColor: '#FF4D6D',
-          transform: [{ rotate: '45deg' }],
-          borderRadius: Math.max(6, Math.round(size * 0.08)),
-        }}
-      />
-    </View>
-  );
 };
 
 export default function MapScreen() {
@@ -93,6 +30,7 @@ export default function MapScreen() {
   const events = useAppStore((s) => s.events);
   const fetchEvents = useAppStore((s) => s.fetchEvents);
   const eventsLoading = useAppStore((s) => s.eventsLoading);
+  const eventsError = useAppStore((s) => s.eventsError);
   const pickedLocation = useAppStore((s) => s.pickedLocation);
   const setPickedLocation = useAppStore((s) => s.setPickedLocation);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -106,6 +44,7 @@ export default function MapScreen() {
   const [searchSuggestions, setSearchSuggestions] = useState<AddressSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [lastGeocodeDebug, setLastGeocodeDebug] = useState('');
+  const [markerSource, setMarkerSource] = useState<any>(() => getMapMarkerSourceSync());
   const isMountedRef = useRef(true);
 
   const yandexKey = useMemo(() => {
@@ -137,15 +76,11 @@ export default function MapScreen() {
       }
     }
 
-    // Best-effort init synchronously (before first YaMap mount)
-    try {
-      const init = m?.init;
-      if (typeof init === 'function') init(yandexKey);
-    } catch {
-      // ignore
-    }
-
     return m;
+  }, [yandexKey]);
+
+  useEffect(() => {
+    if (yandexKey) initYamapInstance(yandexKey);
   }, [yandexKey]);
 
   useEffect(() => {
@@ -172,6 +107,17 @@ export default function MapScreen() {
     }).catch(() => {});
   }, [fetchEvents, category, intensity]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const source = await loadMapMarkerSource();
+      if (!cancelled) setMarkerSource(source);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const styles = useMemo(
     () => createStyles(colors, spacing, fontSize, fontWeight, borderRadius, shadows),
     [colors, spacing, fontSize, fontWeight, borderRadius, shadows]
@@ -184,6 +130,15 @@ export default function MapScreen() {
       return typeof lat === 'number' && Number.isFinite(lat) && typeof lng === 'number' && Number.isFinite(lng);
     });
   }, [events]);
+
+  const mapStatusText = useMemo(() => {
+    if (eventsLoading) return 'Загрузка событий…';
+    const total = events?.length ?? 0;
+    const onMap = eventsWithCoords.length;
+    if (onMap > 0) return `Событий на карте: ${onMap}`;
+    if (total > 0) return `Событий в ленте: ${total}, но у них не указана точка на карте`;
+    return 'Событий на карте: 0';
+  }, [events, eventsLoading, eventsWithCoords.length]);
 
   const paramCenterLat = typeof params.centerLat === 'string' ? Number(params.centerLat) : NaN;
   const paramCenterLng = typeof params.centerLng === 'string' ? Number(params.centerLng) : NaN;
@@ -493,7 +448,7 @@ export default function MapScreen() {
       {mode === 'browse' ? (
         <View style={styles.filters}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-            {renderChip('Все', category === null, () => setCategory(null))}
+            {renderChip('Все события', category === null, () => setCategory(null))}
             {CATEGORY_SLUGS.map((slug) => renderChip(CATEGORY_LABELS[slug], category === slug, () => setCategory(slug)))}
           </ScrollView>
 
@@ -553,7 +508,7 @@ export default function MapScreen() {
               } as any)
             : {})}
         >
-          {mode === 'browse'
+          {mode === 'browse' && markerSource
             ? eventsWithCoords.map((e) => {
                 const p = e.location.coordinates!;
                 return (
@@ -563,14 +518,14 @@ export default function MapScreen() {
                     onPress={() => setSelectedEvent(e)}
                     handled={true}
                     anchor={{ x: 0.5, y: 1 }}
-                  >
-                    <MapMarkerVisual markerKey={`event-${e.id}`} size={44} />
-                  </Marker>
+                    source={markerSource}
+                    scale={EVENT_MAP_MARKER_SCALE}
+                  />
                 );
               })
             : null}
 
-          {mode === 'pick' && (pickCenter || pickedLocation) ? (
+          {mode === 'pick' && markerSource && (pickCenter || pickedLocation) ? (
             <Marker
               key={`pick-${(pickCenter || pickedLocation)!.latitude.toFixed(6)}-${(pickCenter || pickedLocation)!.longitude.toFixed(6)}`}
               point={{
@@ -579,12 +534,9 @@ export default function MapScreen() {
               }}
               handled={true}
               anchor={{ x: 0.5, y: 1 }}
-            >
-              <MapMarkerVisual
-                markerKey={`pick-${(pickCenter || pickedLocation)!.latitude.toFixed(6)}-${(pickCenter || pickedLocation)!.longitude.toFixed(6)}`}
-                size={52}
-              />
-            </Marker>
+              source={markerSource}
+              scale={PICK_MAP_MARKER_SCALE}
+            />
           ) : null}
         </YaMap>
       </View>
@@ -691,7 +643,11 @@ export default function MapScreen() {
               <TouchableOpacity
                 style={[styles.actionBtn, styles.actionPrimary]}
                 onPress={() => {
-                  const c = pickCenter || pickedLocation || initialPick;
+                  const c = pickCenter || pickedLocation;
+                  if (!c) {
+                    Alert.alert('Выберите точку', 'Найдите адрес или тапните по карте перед сохранением.');
+                    return;
+                  }
                   const effectiveAddress = pickAddress || searchQuery.trim() || (pickedLocation as any)?.address || '';
                   applyPickedLocationAndGoBack({
                     latitude: c.latitude,
@@ -769,17 +725,35 @@ export default function MapScreen() {
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.meta}>
-                {eventsLoading ? 'Загрузка событий…' : `Событий на карте: ${eventsWithCoords.length}`}
-              </Text>
+              {eventsError ? (
+                <Text style={styles.errorText}>{eventsError}</Text>
+              ) : (
+                <Text style={styles.meta}>{mapStatusText}</Text>
+              )}
             </View>
           ) : (
             <View style={styles.hintCard}>
               <Text style={styles.hintTitle}>Тап по маркеру</Text>
               <Text style={styles.hintText}>Откроется карточка события и кнопки “Открыть / Маршрут”.</Text>
-              <Text style={styles.meta}>
-                {eventsLoading ? 'Загрузка событий…' : `Событий на карте: ${eventsWithCoords.length}`}
-              </Text>
+              {eventsError ? (
+                <>
+                  <Text style={styles.errorText}>{eventsError}</Text>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.actionPrimary, { marginTop: 10 }]}
+                    onPress={() => {
+                      fetchEvents({
+                        ...(category ? { category } : {}),
+                        ...(intensity ? { intensity } : {}),
+                      }).catch(() => {});
+                    }}
+                    activeOpacity={0.9}
+                  >
+                    <Text style={styles.actionPrimaryText}>Повторить загрузку</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <Text style={styles.meta}>{mapStatusText}</Text>
+              )}
             </View>
           )}
         </View>

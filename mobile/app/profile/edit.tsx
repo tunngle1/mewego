@@ -8,6 +8,8 @@ import {
   ScrollView,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +17,8 @@ import { useTheme } from '../../src/contexts/ThemeContext';
 import { useAppStore } from '../../src/store/useAppStore';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../src/services/api';
+
+const MAX_AVATAR_DATA_URL_LENGTH = 1_800_000;
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -47,7 +51,7 @@ export default function EditProfileScreen() {
       ...(mediaTypes ? { mediaTypes } : {}),
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.7,
+      quality: 0.45,
       base64: true,
     });
 
@@ -58,7 +62,15 @@ export default function EditProfileScreen() {
       return;
     }
     const mime = asset.mimeType || 'image/jpeg';
-    setAvatarDataUrl(`data:${mime};base64,${asset.base64}`);
+    const dataUrl = `data:${mime};base64,${asset.base64}`;
+    if (dataUrl.length > MAX_AVATAR_DATA_URL_LENGTH) {
+      Alert.alert(
+        'Фото слишком большое',
+        'Выберите другое фото или сделайте снимок меньшего размера.'
+      );
+      return;
+    }
+    setAvatarDataUrl(dataUrl);
   };
 
   const handleSave = async () => {
@@ -129,6 +141,7 @@ export default function EditProfileScreen() {
     },
     content: {
       padding: spacing.lg,
+      paddingBottom: spacing.xl * 3,
     },
     avatarSection: {
       alignItems: 'center',
@@ -218,65 +231,75 @@ export default function EditProfileScreen() {
         <Text style={styles.headerTitle}>Редактировать</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.avatarSection}>
-          <View style={styles.avatar}>
-            {effectiveAvatar ? (
-              <Image source={{ uri: effectiveAvatar }} style={styles.avatarImage} />
-            ) : (
-              <Text style={styles.avatarText}>{name ? name.charAt(0).toUpperCase() : '👤'}</Text>
-            )}
-          </View>
-          <TouchableOpacity style={styles.changeAvatarButton} onPress={handlePickAvatar} activeOpacity={0.8}>
-            <Text style={styles.changeAvatarText}>Изменить фото</Text>
-          </TouchableOpacity>
-          <Text style={styles.hint}>Фото сохранится после “Сохранить”</Text>
-        </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Имя</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="Ваше имя"
-            placeholderTextColor={colors.textMuted}
-          />
-        </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Телефон</Text>
-          <TextInput
-            style={[styles.input, styles.inputDisabled]}
-            value={phone}
-            editable={false}
-          />
-          <Text style={styles.hint}>Телефон нельзя изменить</Text>
-        </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>О себе</Text>
-          <TextInput
-            style={[styles.input, styles.inputMultiline]}
-            value={about}
-            onChangeText={setAbout}
-            placeholder="Коротко о себе, что любите, чем занимаетесь…"
-            placeholderTextColor={colors.textMuted}
-            multiline
-          />
-        </View>
-
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={loading}
-          activeOpacity={0.8}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
         >
-          <Text style={styles.saveButtonText}>
-            {loading ? 'Сохранение...' : 'Сохранить'}
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <View style={styles.avatarSection}>
+            <View style={styles.avatar}>
+              {effectiveAvatar ? (
+                <Image source={{ uri: effectiveAvatar }} style={styles.avatarImage} />
+              ) : (
+                <Text style={styles.avatarText}>{name ? name.charAt(0).toUpperCase() : '👤'}</Text>
+              )}
+            </View>
+            <TouchableOpacity style={styles.changeAvatarButton} onPress={handlePickAvatar} activeOpacity={0.8}>
+              <Text style={styles.changeAvatarText}>Изменить фото</Text>
+            </TouchableOpacity>
+            <Text style={styles.hint}>Фото сохранится после “Сохранить”</Text>
+          </View>
+
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>Имя</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Ваше имя"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>Телефон</Text>
+            <TextInput
+              style={[styles.input, styles.inputDisabled]}
+              value={phone}
+              editable={false}
+            />
+            <Text style={styles.hint}>Смена телефона будет доступна после подтверждения по SMS</Text>
+          </View>
+
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>О себе</Text>
+            <TextInput
+              style={[styles.input, styles.inputMultiline]}
+              value={about}
+              onChangeText={setAbout}
+              placeholder="Коротко о себе, что любите, чем занимаетесь…"
+              placeholderTextColor={colors.textMuted}
+              multiline
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.saveButtonText}>
+              {loading ? 'Сохранение...' : 'Сохранить'}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -58,6 +58,7 @@ export default function AdminSettingsScreen() {
   const handleGoToAnalytics = () => router.push('/(admin)/analytics');
   const handleGoToEvents = () => router.push('/(admin)/events');
   const handleGoToLogs = () => router.push('/(admin)/logs');
+  const handleEditProfile = () => router.push('/profile/edit');
 
   const handleChooseTheme = () => {
     Alert.alert(
@@ -224,13 +225,14 @@ export default function AdminSettingsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={[styles.card, styles.profileCard]}>
+        <TouchableOpacity style={[styles.card, styles.profileCard]} onPress={handleEditProfile} activeOpacity={0.85}>
           <Avatar source={user?.avatar} size={72} />
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user?.name || 'Администратор'}</Text>
             <Badge label={roleLabel} variant={roleVariant} size="sm" />
+            <Text style={styles.menuHint}>Нажмите, чтобы редактировать профиль</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Профиль</Text>
@@ -256,7 +258,7 @@ export default function AdminSettingsScreen() {
 
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>Роль</Text>
-            <Text style={styles.infoValue}>{user?.role}</Text>
+            <Text style={styles.infoValue}>{roleLabel}</Text>
           </View>
 
           <View style={styles.infoItem}>
@@ -349,8 +351,8 @@ export default function AdminSettingsScreen() {
             <Text style={styles.infoLabel}>Права доступа</Text>
             <Text style={styles.infoValue}>
               {user?.role === 'superadmin' 
-                ? 'Полный доступ' 
-                : 'Модерация (без ролей/удаления)'}
+                ? 'Полный доступ: модерация, роли, удаление, аналитика'
+                : 'Модерация без ролей, удаления и аналитики'}
             </Text>
           </View>
         </View>

@@ -1,17 +1,20 @@
 # EAS build upload ignore list (repo root)
 #
-# This repo is a monorepo; EAS archives from the VCS root by default.
-# Keep the archive small by uploading only the mobile app folder.
+# Monorepo setup: upload ONLY the mobile app folder to EAS Build.
+# Keep this strict so archive size stays far below 2 GB.
 
 # Ignore everything by default
-*
+/*
 
-# Include only mobile app
-!mobile/
-!mobile/**
+# Include mobile app directory and all its contents
+!/mobile
+!/mobile/**
 
-# Extra safety: exclude heavy local folders inside mobile
+# Exclude local/generated files inside mobile
 mobile/node_modules/
+mobile/.gradle-home/
+mobile/.gradle/
+mobile/.idea/
 mobile/android/
 mobile/ios/
 mobile/.expo/

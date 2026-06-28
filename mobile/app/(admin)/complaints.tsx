@@ -50,7 +50,7 @@ export default function AdminComplaintsScreen() {
     () => createStyles(colors, spacing, fontSize, fontWeight, borderRadius, shadows),
     [colors, spacing, fontSize, fontWeight, borderRadius, shadows]
   );
-  const { getAdminComplaints, adminLoading, fetchAdminComplaints } = useAppStore();
+  const { getAdminComplaints, adminLoading, adminError, fetchAdminComplaints } = useAppStore();
   const [activeTab, setActiveTab] = useState<TabFilter>('open');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -120,7 +120,16 @@ export default function AdminComplaintsScreen() {
           />
         }
       >
-        {filteredComplaints.length > 0 ? (
+        {adminError ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>⚠️</Text>
+            <Text style={styles.emptyTitle}>Не удалось загрузить жалобы</Text>
+            <Text style={styles.emptyText}>{adminError}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={handleRefresh} activeOpacity={0.85}>
+              <Text style={styles.retryButtonText}>Повторить</Text>
+            </TouchableOpacity>
+          </View>
+        ) : filteredComplaints.length > 0 ? (
           <View style={styles.complaintsList}>
             {filteredComplaints.map((complaint) => (
               <TouchableOpacity
@@ -316,6 +325,18 @@ const createStyles = (
     fontSize: fontSize.sm,
     color: colors.textMuted,
     textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.accent,
+  },
+  retryButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: colors.white,
   },
   loadingContainer: {
     flex: 1,

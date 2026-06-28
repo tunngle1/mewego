@@ -139,9 +139,7 @@ export default function TestLoginScreen() {
     const target =
       role === 'superadmin' || role === 'admin'
         ? '/(admin)/dashboard'
-        : role === 'organizer'
-          ? '/(organizer)/dashboard'
-          : '/(tabs)/explore';
+        : '/(tabs)/explore';
     router.replace(target as any);
   };
 
